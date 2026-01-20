@@ -1,0 +1,38 @@
+function [Htilde] = gs_range_ranger_Htilde(sc_state,gs_state,wE)
+%{
+Inputs:
+    >sc_state: 6x1 S/C state vector
+    >gs_state: 6x1 GS state vector
+    >wE: Earth's rotation rate
+Outputs:
+    >Htilde: jacobian of partials of rho and rho_dot wrt GS position state
+%}
+
+% Break apart state vectors
+x = sc_state(1);
+y = sc_state(2);
+z = sc_state(3);
+xd = sc_state(4);
+yd = sc_state(5);
+zd = sc_state(6);
+xs = gs_state(1);
+ys = gs_state(2);
+zs = gs_state(3);
+xsd = gs_state(4);
+ysd = gs_state(5);
+zsd = gs_state(6);
+
+% Assign differnce vars
+dx = x-xs;
+dy = y-ys;
+dz = z-zs;
+dxd = xd - xsd;
+dyd = yd - ysd;
+dzd = zd - zsd;
+rho = norm(sc_state(1:3)-gs_state(1:3));
+N = dx*dxd + dy*dyd + dz*dzd;
+
+Htilde = [-dx/rho, -dy/rho, -dz/rho;
+          (-dxd-wE*dy)/rho+(dx*N)/rho^3, (-dyd+wE*dx)/rho+(dy*N)/rho^3, -dzd/rho+(dz*N)/rho^3];
+
+end
