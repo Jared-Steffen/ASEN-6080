@@ -47,7 +47,7 @@ J2 = 1.0826269e-3;
 % Get initial r and v
 [r0,v0] = oe2rv(mu,a,e,Omega,i,w,nu0);
 var = [r0;v0;J2];
-pert = [1 0 0 0 0.001 0 0]';
+pert = [1 0 0 0 0.01 0 0]';
 var_pert = var + pert;
 
 % Orbital period
@@ -70,15 +70,15 @@ times{1} = t;
 
 % Reshape ICs for STM
 % var_stm = [test_X0;reshape(test_Phi0,[],1)];
-var_stm = [var_pert;reshape(eye(7),[],1)];
+var_stm = [var;reshape(eye(7),[],1)];
 
 
 % ode45 calls for STM
-[t,stm_pert] = ode45(@(t,x) odeSTM_J2(t,x,mu,Re),tspan,var_stm,options);
+[t,stm] = ode45(@(t,x) odeSTM_J2(t,x,mu,Re),tspan,var_stm,options);
 
 % Extract STMs and reshape to be 7x7 and then propogate pertubations
 for i = 1:length(t)
-    stm_p2 = reshape(stm_pert(i,8:end),7,7);
+    stm_p2 = reshape(stm(i,8:end),7,7);
     pertt(i,:) = stm_p2 * pert;
 end
 
@@ -86,8 +86,8 @@ deltaxs{2} = pertt;
 times{2} = t;
 
 % Plots
-% plot_rv_state(times,test_states,{"Given Data","Simulated Data"},false)
-% plot_rv_state(times,deltaxs,{"NL Propagation","STM Propagation"},true)
+plot_rv_state(times,test_states,{"Given Data","Simulated Data"},false)
+plot_rv_state(times,deltaxs,{"NL Propagation","STM Propagation"},true)
 
 r_labels = {'\deltax Position Difference [km]','\deltay Position Difference [km]','\deltaz Position Difference [km]'};
 v_labels = {'\deltav_x Velocity Difference [km/s]','\deltav_y Velocity Difference [km/s]','\deltav_z Velocity Difference [km/s]'};
@@ -96,41 +96,41 @@ pert_diff = (state_pert - state_unpert) - pertt;
 r = pert_diff(:,1:3);
 v = pert_diff(:,4:6);
 
-% figure();
-% subplot(311)
-% hold on
-% plot(t/3600,r(:,1))
-% xlabel('Time [hr]')
-% ylabel(r_labels{1})
-% subplot(312)
-% hold on
-% plot(t/3600,r(:,2))
-% xlabel('Time [hr]')
-% ylabel(r_labels{2})
-% subplot(313)
-% hold on
-% plot(t/3600,r(:,3))
-% xlabel('Time [hr]')
-% ylabel(r_labels{3})
-% sgtitle('\deltar_{NL} - \deltar_{STM} Position Difference')
-% 
-% figure();
-% subplot(311)
-% hold on
-% plot(t/3600,v(:,1))
-% xlabel('Time [hr]')
-% ylabel(v_labels{1})
-% subplot(312)
-% hold on
-% plot(t/3600,v(:,2))
-% xlabel('Time [hr]')
-% ylabel(v_labels{2})
-% subplot(313)
-% hold on
-% plot(t/3600,v(:,3))
-% xlabel('Time [hr]')
-% ylabel(v_labels{3})
-% sgtitle('\deltav_{NL} - \deltav_{STM} Velocity Difference')
+figure();
+subplot(311)
+hold on
+plot(t/3600,r(:,1))
+xlabel('Time [hr]')
+ylabel(r_labels{1})
+subplot(312)
+hold on
+plot(t/3600,r(:,2))
+xlabel('Time [hr]')
+ylabel(r_labels{2})
+subplot(313)
+hold on
+plot(t/3600,r(:,3))
+xlabel('Time [hr]')
+ylabel(r_labels{3})
+sgtitle('\deltar_{NL} - \deltar_{STM} Position Difference')
+
+figure();
+subplot(311)
+hold on
+plot(t/3600,v(:,1))
+xlabel('Time [hr]')
+ylabel(v_labels{1})
+subplot(312)
+hold on
+plot(t/3600,v(:,2))
+xlabel('Time [hr]')
+ylabel(v_labels{2})
+subplot(313)
+hold on
+plot(t/3600,v(:,3))
+xlabel('Time [hr]')
+ylabel(v_labels{3})
+sgtitle('\deltav_{NL} - \deltav_{STM} Velocity Difference')
 
 %% Problem 3
 
@@ -181,7 +181,7 @@ measurements_shift = measurements; % copy for adding Doppler calculations
 measurements_noisy = measurements; % copy for adding noise
 
 % Plot a and b
-% plot_measurements(t,measurements,station_ids)
+plot_measurements(t,measurements,station_ids)
 
 % Doppler and RU conversion constants
 fTref = 8.44e9; % Hz
@@ -227,34 +227,34 @@ for i = 1:T
     fshift_all = [fshift_all; M(:,3)];
 end
 
-% % Range and range rate figure
-% figure();
-% subplot(211) 
-% hold on
-% for s = 1:Ns
-%     idx = (station_id_all == s);
-%     if any(idx)
-%         plot(time_all(idx)/3600, RU_all(idx), 'o', 'MarkerSize', 4);
-%     end
-% end
-% ylabel('Range Units')
-% xlabel('Time [hr]')
-% title('Range')
-% 
-% subplot(212)
-% hold on
-% for s = 1:Ns
-%     idx = (station_id_all == s);
-%     if any(idx)
-%         plot(time_all(idx)/3600, fshift_all(idx), 'o', 'MarkerSize', 4);
-%     end
-% end
-% ylabel('Doppler Shift [Hz]')
-% xlabel('Time [hr]')
-% title('Range Rate')
-% lgd = legend(station_legend);
-% lgd.Units = 'normalized';
-% lgd.Position = [0.75 0.935 0.25 0.05];
+% Range and range rate figure
+figure();
+subplot(211) 
+hold on
+for s = 1:Ns
+    idx = (station_id_all == s);
+    if any(idx)
+        plot(time_all(idx)/3600, RU_all(idx), 'o', 'MarkerSize', 4);
+    end
+end
+ylabel('Range Units')
+xlabel('Time [hr]')
+title('Range')
+
+subplot(212)
+hold on
+for s = 1:Ns
+    idx = (station_id_all == s);
+    if any(idx)
+        plot(time_all(idx)/3600, fshift_all(idx), 'o', 'MarkerSize', 4);
+    end
+end
+ylabel('Doppler Shift [Hz]')
+xlabel('Time [hr]')
+title('Range Rate')
+lgd = legend(station_legend);
+lgd.Units = 'normalized';
+lgd.Position = [0.75 0.935 0.25 0.05];
 
 % Noise
 sigma_rhodot = 0.5e-6; % km/s
@@ -275,7 +275,7 @@ for i = 1:length(measurements_noisy)
 end
 
 % Plot noisy measurements
-% plot_measurements(t,measurements_noisy,station_ids)
+plot_measurements(t,measurements_noisy,station_ids)
 
 % Initialize
 Ns = 3;
@@ -295,18 +295,18 @@ for i = 1:T
     rho_dot_resid_all = [rho_dot_resid_all; M(:,2)];
 end
 
-% figure();
-% hold on
-% for s = 1:Ns
-%     idx = (station_id_all == s);
-%     if any(idx)
-%         plot(time_all(idx)/3600, rho_dot_resid_all(idx), 'o', 'MarkerSize', 4);
-%     end
-% end
-% ylabel('Range Rate Error [km/s]')
-% xlabel('Time [hr]')
-% title('Range Rate Noise Difference')
-% lgd = legend(station_legend);
-% lgd.Units = 'normalized';
-% lgd.Position = [0.75 0.935 0.25 0.05];
+figure();
+hold on
+for s = 1:Ns
+    idx = (station_id_all == s);
+    if any(idx)
+        plot(time_all(idx)/3600, rho_dot_resid_all(idx), 'o', 'MarkerSize', 4);
+    end
+end
+ylabel('Range Rate Error [km/s]')
+xlabel('Time [hr]')
+title('Range Rate Noise Difference')
+lgd = legend(station_legend);
+lgd.Units = 'normalized';
+lgd.Position = [0.75 0.935 0.25 0.05];
 
