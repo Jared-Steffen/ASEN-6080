@@ -47,7 +47,7 @@ J2 = 1.0826269e-3;
 % Get initial r and v
 [r0,v0] = oe2rv(mu,a,e,Omega,i,w,nu0);
 var = [r0;v0;J2];
-pert = [1 0 0 0 0.01 0 0]';
+pert = [1 0 0 0 0.001 0 0]';
 var_pert = var + pert;
 
 % Orbital period
@@ -55,18 +55,18 @@ n = sqrt(mu/a^3);
 T = (2*pi)/n;
 
 % Time vector
-tspan = 0:10:15*T;
+tspan = [0 15*T];
 
 % ode45 calls for truth data
-options = odeset('RelTol',1e-9,'AbsTol',1e-9);
+options = odeset('RelTol',1e-10,'AbsTol',1e-10);
 [t,state_unpert] = ode45(@(t,x) orbitEOM_J2(t,x,mu,Re,J2),tspan,var,options);
 [~,state_pert] = ode45(@(t,x) orbitEOM_J2(t,x,mu,Re,J2),t,var_pert,options);
 
-test_states{1} = truth_2a(:,2:end);
-test_states{2} = state_unpert;
+% test_states{1} = truth_2a(:,2:end);
+% test_states{2} = state_unpert;
 
-deltaxs{1} = state_pert - state_unpert;
-times{1} = t;
+% deltaxs{1} = state_pert - state_unpert;
+% times{1} = t;
 
 % Reshape ICs for STM
 % var_stm = [test_X0;reshape(test_Phi0,[],1)];
@@ -74,63 +74,63 @@ var_stm = [var;reshape(eye(7),[],1)];
 
 
 % ode45 calls for STM
-[t,stm] = ode45(@(t,x) odeSTM_J2(t,x,mu,Re),tspan,var_stm,options);
+[~,stm] = ode45(@(t,x) odeSTM_J2(t,x,mu,Re),t,var_stm,options);
 
 % Extract STMs and reshape to be 7x7 and then propogate pertubations
 for i = 1:length(t)
-    stm_p2 = reshape(stm(i,8:end),7,7);
-    pertt(i,:) = stm_p2 * pert;
+    stm_p2(:,:,i) = reshape(stm(i,8:end),7,7);
+    pertt(i,:) = stm_p2(:,:,i) * pert;
 end
 
-deltaxs{2} = pertt;
-times{2} = t;
+% deltaxs{2} = pertt;
+% times{2} = t;
 
 % Plots
-plot_rv_state(times,test_states,{"Given Data","Simulated Data"},false)
-plot_rv_state(times,deltaxs,{"NL Propagation","STM Propagation"},true)
+% plot_rv_state(times,test_states,{"Given Data","Simulated Data"},false)
+% plot_rv_state(times,deltaxs,{"NL Propagation","STM Propagation"},true)
 
 r_labels = {'\deltax Position Difference [km]','\deltay Position Difference [km]','\deltaz Position Difference [km]'};
 v_labels = {'\deltav_x Velocity Difference [km/s]','\deltav_y Velocity Difference [km/s]','\deltav_z Velocity Difference [km/s]'};
 
-pert_diff = (state_pert - state_unpert) - pertt;
-r = pert_diff(:,1:3);
-v = pert_diff(:,4:6);
+% pert_diff = (state_pert - state_unpert) - pertt;
+% r = pert_diff(:,1:3);
+% v = pert_diff(:,4:6);
 
-figure();
-subplot(311)
-hold on
-plot(t/3600,r(:,1))
-xlabel('Time [hr]')
-ylabel(r_labels{1})
-subplot(312)
-hold on
-plot(t/3600,r(:,2))
-xlabel('Time [hr]')
-ylabel(r_labels{2})
-subplot(313)
-hold on
-plot(t/3600,r(:,3))
-xlabel('Time [hr]')
-ylabel(r_labels{3})
-sgtitle('\deltar_{NL} - \deltar_{STM} Position Difference')
-
-figure();
-subplot(311)
-hold on
-plot(t/3600,v(:,1))
-xlabel('Time [hr]')
-ylabel(v_labels{1})
-subplot(312)
-hold on
-plot(t/3600,v(:,2))
-xlabel('Time [hr]')
-ylabel(v_labels{2})
-subplot(313)
-hold on
-plot(t/3600,v(:,3))
-xlabel('Time [hr]')
-ylabel(v_labels{3})
-sgtitle('\deltav_{NL} - \deltav_{STM} Velocity Difference')
+% figure();
+% subplot(311)
+% hold on
+% plot(t/3600,r(:,1))
+% xlabel('Time [hr]')
+% ylabel(r_labels{1})
+% subplot(312)
+% hold on
+% plot(t/3600,r(:,2))
+% xlabel('Time [hr]')
+% ylabel(r_labels{2})
+% subplot(313)
+% hold on
+% plot(t/3600,r(:,3))
+% xlabel('Time [hr]')
+% ylabel(r_labels{3})
+% sgtitle('\deltar_{NL} - \deltar_{STM} Position Difference')
+% 
+% figure();
+% subplot(311)
+% hold on
+% plot(t/3600,v(:,1))
+% xlabel('Time [hr]')
+% ylabel(v_labels{1})
+% subplot(312)
+% hold on
+% plot(t/3600,v(:,2))
+% xlabel('Time [hr]')
+% ylabel(v_labels{2})
+% subplot(313)
+% hold on
+% plot(t/3600,v(:,3))
+% xlabel('Time [hr]')
+% ylabel(v_labels{3})
+% sgtitle('\deltav_{NL} - \deltav_{STM} Velocity Difference')
 
 %% Problem 3
 
@@ -179,6 +179,9 @@ el_mask = deg2rad(10); % deg -> rad
 measurements = genMeasurements(t,sall_lla,theta0,wE,el_mask,state_pert);
 measurements_shift = measurements; % copy for adding Doppler calculations
 measurements_noisy = measurements; % copy for adding noise
+
+% Save measurements for HW 2
+save('simulation_data.mat','t','state_pert','state_unpert','measurements','stm_p2')
 
 % Plot a and b
 plot_measurements(t,measurements,station_ids)
