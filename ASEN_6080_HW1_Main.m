@@ -48,6 +48,7 @@ J2 = 1.0826269e-3;
 [r0,v0] = oe2rv(mu,a,e,Omega,i,w,nu0);
 var = [r0;v0;J2];
 pert = [1 0 0 0 0.001 0 0]';
+% pert = [0.5 -0.7 0.2 0.0004 -0.0006 0.0002 0]';
 var_pert = var + pert;
 
 % Orbital period
@@ -176,22 +177,23 @@ wE = (2*pi)/24 * 1/3600; % rad/s
 el_mask = deg2rad(10); % deg -> rad
 
 % Generate measurements
-measurements = genMeasurements(t,sall_lla,theta0,wE,el_mask,state_pert);
-measurements_shift = measurements; % copy for adding Doppler calculations
-measurements_noisy = measurements; % copy for adding noise
+[measurements_real,gs_state] = genMeasurements(t,sall_lla,theta0,wE,el_mask,state_pert);
+[measurements_nom,~] = genMeasurements(t,sall_lla,theta0,wE,el_mask,state_unpert);
+measurements_shift = measurements_real; % copy for adding Doppler calculations
+measurements_noisy = measurements_real; % copy for adding noise
 
 % Save measurements for HW 2
-save('simulation_data.mat','t','state_pert','state_unpert','measurements','stm_p2','var','pert')
+save('simulation_data.mat','t','state_pert','state_unpert','measurements_real','measurements_nom','stm_p2','var','pert',"gs_state")
 
 % Plot a and b
-plot_measurements(t,measurements,station_ids)
+plot_measurements(t,measurements_real,station_ids)
 
 % Doppler and RU conversion constants
 fTref = 8.44e9; % Hz
 c = 3e8; % m/s
 
 % Extract range and range rate measurements
-for i = 1:length(measurements)
+for i = 1:length(measurements_real)
     M = measurements_shift{i};
     if isempty(M)
         continue
@@ -266,7 +268,7 @@ sigma_rhodot = 0.5e-6; % km/s
 noisy_residuals = cell(T,1);
 for i = 1:length(measurements_noisy)
     M = measurements_noisy{i};
-    Mn = measurements{i};
+    Mn = measurements_real{i};
     if isempty(M)
         continue
     end

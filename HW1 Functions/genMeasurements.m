@@ -1,4 +1,4 @@
-function [measurements] = genMeasurements(t,stations_lla,theta0,wE,el_mask,sc_state)
+function [measurements,gs_state] = genMeasurements(t,stations_lla,theta0,wE,el_mask,sc_state)
 %{
 Inputs:
     >t: time vector of simulation
@@ -13,6 +13,7 @@ Outputs:
     >measurements: cell array of measurements at each time step in the
                     form of [station id, range, range rate, elevation with
                     units [-, km, km/s, degrees]
+    >gs_state: state of the ground station at every time step
 %}
 
 % Convert lla to ECEF
@@ -24,6 +25,7 @@ wE_eci = [0 0 wE]';
 
 % Initialize
 N = length(t);
+gs_state = zeros(6, N);
 measurements = cell(N,1);
 
 % Iterate through each time step
@@ -75,16 +77,23 @@ for i = 1:N
             rho_dot = dot(sc_pos_eci-r_station_eci,sc_vel_eci-v_station_eci)/rho;
             station_measurements = [station_measurements;
                                     j, rho, rho_dot, rad2deg(el_angle)];
+            gs_state(:,i) = [r_station_eci;v_station_eci];
 
         else
             continue
         end
-
+    end
+    if size(gs_state, 2) < i
+        gs_state(:,i) = [zeros(6,1)];
     end
 
     % Save measurements for time step
     measurements{i} = station_measurements;
+   
 end
+
+% Transpose GS state vector
+gs_state = gs_state';
 
 end
 
