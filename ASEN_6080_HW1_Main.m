@@ -178,6 +178,7 @@ el_mask = deg2rad(10); % deg -> rad
 
 % Generate measurements
 [measurements_real,gs_state] = genMeasurements(t,sall_lla,theta0,wE,el_mask,state_pert);
+[measurements_realJ3,gs_stateJ3] = genMeasurements(t,sall_lla,theta0,wE,el_mask,state_pertJ3);
 [measurements_nom,~] = genMeasurements(t,sall_lla,theta0,wE,el_mask,state_unpert);
 measurements_shift = measurements_real; % copy for adding Doppler calculations
 measurements_noisy = measurements_real; % copy for adding noise

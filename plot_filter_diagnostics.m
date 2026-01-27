@@ -100,6 +100,27 @@ for k = 1:2
     title(titles_QQ{k})
 end
 
+% RMS
+rms_xyz = rms(er);
+rms_vxvyvz = rms(ev);
+rms_r = rms(er3);
+rms_v = rms(ev3);
+rms_res = rms(yhat,'omitnan');
+
+disp("--- " + filter_type + " Position RMS Errors [km] ---")
+disp(['RMS x = ', num2str(rms_xyz(1))])
+disp(['RMS y = ', num2str(rms_xyz(2))])
+disp(['RMS z = ', num2str(rms_xyz(3))])
+disp(['3D Position RMS = ', num2str(rms_r)])
+disp("--- " + filter_type + " Velocity RMS Errors [km/s] ---")
+disp(['RMS vx = ', num2str(rms_vxvyvz(1))])
+disp(['RMS vy = ', num2str(rms_vxvyvz(2))])
+disp(['RMS vz = ', num2str(rms_vxvyvz(3))])
+disp(['3D Velocity RMS = ', num2str(rms_v)])
+disp("--- " + filter_type + " Post-fit Residual RMS [km]/[km/s] ---")
+disp(['Range Residual RMS = ', num2str(rms_res(1))])
+disp(['Range Rate Residual RMS = ', num2str(rms_res(2))])
+
 
 end
 

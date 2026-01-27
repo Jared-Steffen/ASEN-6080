@@ -59,10 +59,10 @@ while err > tol
             Phii = reshape(last_sstm(n+1:end),n,n);
         end
         Xhat(i,:,k) = Xbari';
+        Phii_store(:,:,i) = Phii;
     
         % Computes observation deviation
         if isempty(M)
-            P(:,:,i) = Phii*inv(Lambda)*Phii';
             yhat(:,i,k) = NaN;
             continue % skips measurement update if no measurement available
         end
@@ -76,7 +76,11 @@ while err > tol
         Hi = Htilde*Phii;
         Lambda = Lambda + Hi'/R*Hi;
         N = N + Hi'/R*yhat(:,i,k);
-        P(:,:,i) = Phii*inv(Lambda)*Phii';
+    end
+
+    % Get covariance at each step
+    for i = 1:length(t)
+        P(:,:,i,k) = Phii_store(:,:,i)/Lambda*Phii_store(:,:,i)';
     end
 
     % Solve normal equations

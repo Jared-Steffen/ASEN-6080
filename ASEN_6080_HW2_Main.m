@@ -30,20 +30,19 @@ mu = 398600.4415;  % km^3/s^2
 J2 = 1.0826269e-3;
 Re = 6378; % km
 
-% Load truth simulation data
-data = load("simulation_data.mat");
-Xnom = data.state_unpert;
-Xnom = Xnom(:,1:6);
-Xtruth = data.state_pert;
-Xtruth = Xtruth(:,1:6);
-Phi = data.stm_p2;
-Phi = Phi(1:6,1:6,:);
-truth_measurements = data.measurements_real;
-nom_measurements = data.measurements_nom;
-t = data.t;
-x0 = data.var;
-dx0 = data.pert;
-gs_state = data.gs_state;
+% Load truth simulation data - J2
+dataJ2 = load("simulation_data.mat");
+XnomJ2 = dataJ2.state_unpert;
+XnomJ2 = XnomJ2(:,1:6);
+XtruthJ2 = dataJ2.state_pert;
+XtruthJ2 = XtruthJ2(:,1:6);
+PhiJ2 = dataJ2.stm_p2;
+PhiJ2 = PhiJ2(1:6,1:6,:);
+truth_measurementsJ2 = dataJ2.measurements_real;
+nom_measurementsJ2 = dataJ2.measurements_nom;
+tJ2 = dataJ2.t;
+dx0J2 = dataJ2.pert;
+gs_stateJ2 = dataJ2.gs_state;
 
 % Set seed for random number generator
 rng(42)
@@ -54,12 +53,12 @@ sigma_rdot = 1e-6; % [km/s]
 R = diag([sigma_r,sigma_rdot].^2);
 
 % Add noise to measurements
-noisy_truth_measurements = cell(length(t),1);
-for i = 1:length(t)
-    if isempty(truth_measurements{i})
+noisy_truth_measurements = cell(length(tJ2),1);
+for i = 1:length(tJ2)
+    if isempty(truth_measurementsJ2{i})
         continue
     end
-    M = truth_measurements{i};
+    M = truth_measurementsJ2{i};
     n = size(M,1);
     M(2) = M(2) + sigma_r*randn(n,1);
     M(3) = M(3) + sigma_rdot*randn(n,1);
@@ -68,17 +67,31 @@ end
 
 % Initial priori covariance and state error
 Pbar0 = diag([1,1,1,1e-3,1e-3,1e-3].^2);
-xbar0 = dx0(1:6);
+xbar0 = dx0J2(1:6);
+
+% Only half the measurements
+% half_len = length(noisy_truth_measurements)/2;
+% t = t(1:half_len);
+% Xnom = Xnom(1:half_len,:);
+% Xtruth = Xtruth(1:half_len,:);
+% gs_state = gs_state(1:half_len,:);
+% nom_measurements = nom_measurements(1:half_len);
+% noisy_truth_measurements = noisy_truth_measurements(1:half_len);
 
 % LKF
-% [dxhat,XhatLKF,PLKF,yLKF,yhatLKF] = orbitLKF(t,xbar0,Pbar0,Phi,noisy_truth_measurements,nom_measurements,R,Xnom,gs_state);
-% plot_filter_diagnostics(t,Xtruth,XhatLKF,PLKF,yhatLKF,'LKF');
+[dxhat,XhatLKF,PLKF,yLKF,yhatLKF] = orbitLKF(tJ2,xbar0,Pbar0,PhiJ2,noisy_truth_measurements,nom_measurementsJ2,R,XnomJ2,gs_stateJ2);
+plot_filter_diagnostics(tJ2,XtruthJ2,XhatLKF,PLKF,yhatLKF,'LKF');
 
 % EKF 
-[XhatEKF,PEKF,yEKF,yhatEKF] = orbitEKF(t,xbar0,Pbar0,Phi,noisy_truth_measurements,nom_measurements,R,Xnom,gs_state,mu,Re,J2,measurement_params);
-plot_filter_diagnostics(t,Xtruth,XhatEKF,PEKF,yhatEKF,'EKF');
+[XhatEKF,PEKF,yEKF,yhatEKF] = orbitEKF(tJ2,xbar0,Pbar0,PhiJ2,noisy_truth_measurements,nom_measurementsJ2,R,XnomJ2,gs_stateJ2,mu,Re,J2,measurement_params);
+plot_filter_diagnostics(tJ2,XtruthJ2,XhatEKF,PEKF,yhatEKF,'EKF');
 
 % Batch
 tol = 1e-6;
-[XhatBLLS,PBLLS,yhatBLLS,batch_cnt] = orbitBatch(t,xbar0,Pbar0,noisy_truth_measurements,R,Xnom,gs_state,mu,Re,J2,measurement_params,tol);
-plot_filter_diagnostics(t,Xtruth,XhatBLLS(:,:,4),PBLLS,yhatBLLS(:,:,4),'Batch LLS');
+[XhatBLLS,PBLLS,yhatBLLS,batch_cnt] = orbitBatch(tJ2,xbar0,Pbar0,noisy_truth_measurements,R,XnomJ2,gs_stateJ2,mu,Re,J2,measurement_params,tol);
+test = XhatBLLS(:,:,end);
+% plot_filter_diagnostics(t,Xtruth,XhatBLLS(:,:,1),PBLLS(:,:,:,1),yhatBLLS(:,:,1),'First Batch LLS');
+% plot_filter_diagnostics(t,Xtruth,XhatBLLS(:,:,2),PBLLS(:,:,:,2),yhatBLLS(:,:,2),'Second Batch LLS');
+% plot_filter_diagnostics(t,Xtruth,XhatBLLS(:,:,3),PBLLS(:,:,:,3),yhatBLLS(:,:,3),'Third Batch LLS');
+% plot_filter_diagnostics(t,Xtruth,XhatBLLS(:,:,4),PBLLS(:,:,:,4),yhatBLLS(:,:,4),'Fourth Batch LLS');
+plot_filter_diagnostics(tJ2,XtruthJ2,XhatBLLS(:,:,end),PBLLS(:,:,:,end),yhatBLLS(:,:,end),'Final Batch LLS');
