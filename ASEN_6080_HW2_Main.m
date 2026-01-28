@@ -112,34 +112,34 @@ xbar0 = [1 0 0 0 1e-3 0]';
 % noisy_truth_measurementsJ2 = noisy_truth_measurementsJ2(1:half_len);
 
 % LKF J2
-% [dxhat,XhatLKF,PLKF,yLKF,yhatLKF] = orbitLKF(tJ2,xbar0,Pbar0,LKF_Phii,noisy_truth_measurementsJ2,nom_measurementsJ2,R,XnomJ2,gs_stateJ2);
-% plot_filter_diagnostics(tJ2,XtruthJ2,XhatLKF,PLKF,yhatLKF,'LKF');
+[dxhat,XhatLKF,PLKF,yLKF,yhatLKF] = orbitLKF(tJ2,xbar0,Pbar0,LKF_Phii,noisy_truth_measurementsJ2,nom_measurementsJ2,R,XnomJ2,gs_stateJ2);
+plot_filter_diagnostics(tJ2,XtruthJ2,XhatLKF,PLKF,yhatLKF,'LKF');
 
 % EKF J2
-% [XhatEKF,PEKF,yEKF,yhatEKF] = orbitEKF(tJ2,xbar0,Pbar0,LKF_Phii,noisy_truth_measurementsJ2,nom_measurementsJ2,R,XnomJ2,gs_stateJ2,mu,Re,J2,measurement_params);
-% plot_filter_diagnostics(tJ2,XtruthJ2,XhatEKF,PEKF,yhatEKF,'EKF');
+[XhatEKF,PEKF,yEKF,yhatEKF] = orbitEKF(tJ2,xbar0,Pbar0,LKF_Phii,noisy_truth_measurementsJ2,nom_measurementsJ2,R,XnomJ2,gs_stateJ2,mu,Re,J2,measurement_params);
+plot_filter_diagnostics(tJ2,XtruthJ2,XhatEKF,PEKF,yhatEKF,'EKF');
 
 % Batch J2
 tol = 1e-6;
-% [XhatBLLS,PBLLS,yhatBLLS,batch_cnt] = orbitBatch(tJ2,xbar0,Pbar0,noisy_truth_measurementsJ2,R,XnomJ2,gs_stateJ2,mu,Re,J2,measurement_params,tol);
-% plot_filter_diagnostics(tJ2,XtruthJ2,XhatBLLS(:,:,1),PBLLS(:,:,:,1),yhatBLLS(:,:,1),'First Batch LLS');
+[XhatBLLS,PBLLS,yhatBLLS,batch_cnt] = orbitBatch(tJ2,xbar0,Pbar0,noisy_truth_measurementsJ2,R,XnomJ2,gs_stateJ2,mu,Re,J2,measurement_params,tol);
+plot_filter_diagnostics(tJ2,XtruthJ2,XhatBLLS(:,:,1),PBLLS(:,:,:,1),yhatBLLS(:,:,1),'First Batch LLS');
 % plot_filter_diagnostics(t,Xtruth,XhatBLLS(:,:,2),PBLLS(:,:,:,2),yhatBLLS(:,:,2),'Second Batch LLS');
 % plot_filter_diagnostics(t,Xtruth,XhatBLLS(:,:,3),PBLLS(:,:,:,3),yhatBLLS(:,:,3),'Third Batch LLS');
 % plot_filter_diagnostics(t,Xtruth,XhatBLLS(:,:,4),PBLLS(:,:,:,4),yhatBLLS(:,:,4),'Fourth Batch LLS');
-% plot_filter_diagnostics(tJ2,XtruthJ2,XhatBLLS(:,:,end),PBLLS(:,:,:,end),yhatBLLS(:,:,end),'Final Batch LLS');
+plot_filter_diagnostics(tJ2,XtruthJ2,XhatBLLS(:,:,end),PBLLS(:,:,:,end),yhatBLLS(:,:,end),'Final Batch LLS');
 
 % LKF J3
-[dxhat,XhatLKF,PLKF,yLKF,yhatLKF] = orbitLKF(tJ3,xbar0,Pbar0,LKF_Phii,noisy_truth_measurementsJ3,nom_measurementsJ3,R,XnomJ3,gs_stateJ3);
-plot_filter_diagnostics(tJ3,XtruthJ3,XhatLKF,PLKF,yhatLKF,'LKF');
+% [dxhat,XhatLKF,PLKF,yLKF,yhatLKF] = orbitLKF(tJ3,xbar0,Pbar0,LKF_Phii,noisy_truth_measurementsJ3,nom_measurementsJ3,R,XnomJ3,gs_stateJ3);
+% plot_filter_diagnostics(tJ3,XtruthJ3,XhatLKF,PLKF,yhatLKF,'LKF');
 
 % EKF J3
-[XhatEKF,PEKF,yEKF,yhatEKF] = orbitEKF(tJ3,xbar0,Pbar0,LKF_Phii,noisy_truth_measurementsJ3,nom_measurementsJ3,R,XnomJ3,gs_stateJ3,mu,Re,J2,measurement_params);
-plot_filter_diagnostics(tJ3,XtruthJ3,XhatEKF,PEKF,yhatEKF,'EKF');
+% [XhatEKF,PEKF,yEKF,yhatEKF] = orbitEKF(tJ3,xbar0,Pbar0,LKF_Phii,noisy_truth_measurementsJ3,nom_measurementsJ3,R,XnomJ3,gs_stateJ3,mu,Re,J2,measurement_params);
+% plot_filter_diagnostics(tJ3,XtruthJ3,XhatEKF,PEKF,yhatEKF,'EKF');
 
 % Batch J3
-[XhatBLLS,PBLLS,yhatBLLS,batch_cnt] = orbitBatch(tJ3,xbar0,Pbar0,noisy_truth_measurementsJ3,R,XnomJ3,gs_stateJ3,mu,Re,J2,measurement_params,tol);
+% [XhatBLLS,PBLLS,yhatBLLS,batch_cnt] = orbitBatch(tJ3,xbar0,Pbar0,noisy_truth_measurementsJ3,R,XnomJ3,gs_stateJ3,mu,Re,J2,measurement_params,tol);
 % plot_filter_diagnostics(tJ2,XtruthJ2,XhatBLLS(:,:,1),PBLLS(:,:,:,1),yhatBLLS(:,:,1),'First Batch LLS');
 % plot_filter_diagnostics(t,Xtruth,XhatBLLS(:,:,2),PBLLS(:,:,:,2),yhatBLLS(:,:,2),'Second Batch LLS');
 % plot_filter_diagnostics(t,Xtruth,XhatBLLS(:,:,3),PBLLS(:,:,:,3),yhatBLLS(:,:,3),'Third Batch LLS');
 % plot_filter_diagnostics(t,Xtruth,XhatBLLS(:,:,4),PBLLS(:,:,:,4),yhatBLLS(:,:,4),'Fourth Batch LLS');
-plot_filter_diagnostics(tJ3,XtruthJ3,XhatBLLS(:,:,end),PBLLS(:,:,:,end),yhatBLLS(:,:,end),'Final Batch LLS');
+% plot_filter_diagnostics(tJ3,XtruthJ3,XhatBLLS(:,:,end),PBLLS(:,:,:,end),yhatBLLS(:,:,end),'Final Batch LLS');

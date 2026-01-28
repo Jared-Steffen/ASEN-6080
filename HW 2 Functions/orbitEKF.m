@@ -137,9 +137,7 @@ for i = length(tLKF)+1:length(tLKF) + length(tEKF) - 1
     % Measurement correction
     dXhat = Ki*y(:,i);
     Xhat(:,i) = Xbari(:) + dXhat;
-    [Gi,~] = genMeasurements(t(i),stations_lla,theta0,wE,el_mask,Xhat(:,i)');
-    Mni = Gi{1};
-    yhat(:,i) = M(:,2:3)' - Mni(:,2:3)';
+    yhat(:,i) = y(:,i) - Htilde*dXhat;
     P(:,:,i) = (eye(n) - Ki*Htilde)*Pbari;
 
     % Move iteration forward

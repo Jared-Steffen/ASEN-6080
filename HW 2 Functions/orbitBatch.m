@@ -51,36 +51,31 @@ while err > tol
         % Time update
         if i > 1
             current_tstep = [t(i-1) t(i)];
-            state_stm = [Xbari';reshape(Phii,[],1)];
+            state_stm = [Xbari(i-1,:)';reshape(Phii,[],1)];
             options = odeset('RelTol',1e-11,'AbsTol',1e-11);
             [~,sstm] = ode45(@(t,x) odeSTM_J2_rv(t,x,mu,Rp,J2),current_tstep,state_stm,options);
             last_sstm = sstm(end,:);
-            Xbari = last_sstm(1:n);
+            Xbari(i,:) = last_sstm(1:n);
             Phii = reshape(last_sstm(n+1:end),n,n);
         end
-        Xhat(i,:,k) = Xbari';
+        Xhat(i,:,k) = Xbari(i,:)';
         Phii_store(:,:,i) = Phii;
     
         % Computes observation deviation
         if isempty(M)
-            yhat(:,i,k) = NaN;
+            y(:,i,k) = NaN;
             continue % skips measurement update if no measurement available
         end
-        [G,~] = genMeasurements(t(i),stations_lla,theta0,wE,el_mask,Xbari);
+        [G,~] = genMeasurements(t(i),stations_lla,theta0,wE,el_mask,Xbari(i,:));
         Mn = G{1};
         if isempty(Mn)
             continue
         end
-        yhat(:,i,k) = M(:,2:3)' - Mn(:,2:3)';
-        Htilde = sc_range_ranger_Htilde(Xbari,gs_state(i,:));
+        y(:,i,k) = M(:,2:3)' - Mn(:,2:3)';
+        Htilde = sc_range_ranger_Htilde(Xbari(i,:),gs_state(i,:));
         Hi = Htilde*Phii;
         Lambda = Lambda + Hi'/R*Hi;
-        N = N + Hi'/R*yhat(:,i,k);
-    end
-
-    % Get covariance at each step
-    for i = 1:length(t)
-        P(:,:,i,k) = Phii_store(:,:,i)/Lambda*Phii_store(:,:,i)';
+        N = N + Hi'/R*y(:,i,k);
     end
 
     % Solve normal equations
@@ -88,6 +83,14 @@ while err > tol
     err = norm(dxhat);
     Xnom(1,:) = Xnom(1,:) + dxhat';
     xbar = xbar - dxhat;
+
+    % Get covariance at each step and post fits
+    for i = 1:length(t)
+        P(:,:,i,k) = Phii_store(:,:,i)/Lambda*Phii_store(:,:,i)';
+        Htilde = sc_range_ranger_Htilde(Xbari,gs_state(i,:));
+        Hi = Htilde*Phii;
+        yhat(:,i,k) = y(:,i,k) - Hi*dxhat;
+    end
 
     % Increase counter
     batch_cnt = batch_cnt + 1;
