@@ -52,7 +52,7 @@ while err > tol
         if i > 1
             current_tstep = [t(i-1) t(i)];
             state_stm = [Xbari';reshape(Phii,[],1)];
-            options = odeset('RelTol',1e-10,'AbsTol',1e-10);
+            options = odeset('RelTol',1e-11,'AbsTol',1e-11);
             [~,sstm] = ode45(@(t,x) odeSTM_J2_rv(t,x,mu,Rp,J2),current_tstep,state_stm,options);
             last_sstm = sstm(end,:);
             Xbari = last_sstm(1:n);

@@ -22,6 +22,7 @@ set(groot,'defaultAxesGridAlpha',0.3)
 set(groot,'defaultAxesXGrid','on')
 set(groot,'defaultAxesYGrid','on')
 lineStyles = {'-','--',':','-.'};
+markerStyles = {'.','o','x'};
 
 % State errors
 e  = Xhat - Xtrue;     % Nx6
@@ -31,16 +32,13 @@ ev = e(:,4:6);        % velocity error
 er3 = sqrt(sum(er.^2,2));  % 3D position error
 ev3 = sqrt(sum(ev.^2,2));  % 3D velocity error
 
-% 3σ bound
+% 3 sigma bound
 N = length(t);
 sig = zeros(N,6);
 for i = 1:N
     sig(i,:) = sqrt(diag(P(:,:,i))).';
 end
 sig3 = 3*sig;
-
-sig_r3 = 3*sqrt(sum(sig(:,1:3).^2,2));
-sig_v3 = 3*sqrt(sum(sig(:,4:6).^2,2));
 
 % State error plots
 r_labels = {'x Error [km]','y Error [km]','z Error [km]'};
@@ -49,9 +47,9 @@ v_labels = {'v_x Error [km/s]','v_y Error [km/s]','v_z Error [km/s]'};
 figure();
 for k = 1:3
     subplot(3,1,k); hold on
-    plot(t/3600, er(:,k), lineStyles{1})
-    sigline = plot(t/3600, +sig3(:,k), lineStyles{2});
-    plot(t/3600, -sig3(:,k), lineStyles{2},'Color',sigline.Color)
+    plot(t/3600, er(:,k), markerStyles{1})
+    line = plot(t/3600, +sig3(:,k), lineStyles{2});
+    plot(t/3600, -sig3(:,k), lineStyles{2},'Color',line.Color)
     xlabel('Time [hr]')
     ylabel(r_labels{k})
 end
@@ -64,9 +62,9 @@ lgd.Position = [0.75 0.935 0.25 0.05];
 figure();
 for k = 1:3
     subplot(3,1,k); hold on
-    plot(t/3600, ev(:,k), lineStyles{1})
-    sigline = plot(t/3600, +sig3(:,k+3), lineStyles{2});
-    plot(t/3600, -sig3(:,k+3), lineStyles{2},'Color',sigline.Color)
+    plot(t/3600, ev(:,k), markerStyles{1});
+    line = plot(t/3600, +sig3(:,k+3), lineStyles{2});
+    plot(t/3600, -sig3(:,k+3), lineStyles{2},'Color',line.Color)
     xlabel('Time [hr]')
     ylabel(v_labels{k})
 end
@@ -85,7 +83,7 @@ titles_QQ = {filter_type + " QQ Plot of Range Residuals vs Standard Normal",filt
 figure()
 for k = 1:2
     subplot(2,1,k); hold on
-    plot(t/3600, yhat(:,k), lineStyles{1})
+    plot(t/3600, yhat(:,k), markerStyles{1})
     xlabel('Time [hr]')
     ylabel(y_labels{k})
 end

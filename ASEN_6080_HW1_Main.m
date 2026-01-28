@@ -43,6 +43,7 @@ nu0 = 0; % rad
 % Grav parameters
 mu = 398600.4415;  % km^3/s^2
 J2 = 1.0826269e-3;
+J3 = -2.5324e-6;
 
 % Get initial r and v
 [r0,v0] = oe2rv(mu,a,e,Omega,i,w,nu0);
@@ -59,15 +60,9 @@ T = (2*pi)/n;
 tspan = [0 15*T];
 
 % ode45 calls for truth data
-options = odeset('RelTol',1e-10,'AbsTol',1e-10);
+options = odeset('RelTol',1e-11,'AbsTol',1e-11);
 [t,state_unpert] = ode45(@(t,x) orbitEOM_J2(t,x,mu,Re,J2),tspan,var,options);
 [~,state_pert] = ode45(@(t,x) orbitEOM_J2(t,x,mu,Re,J2),t,var_pert,options);
-
-% test_states{1} = truth_2a(:,2:end);
-% test_states{2} = state_unpert;
-
-% deltaxs{1} = state_pert - state_unpert;
-% times{1} = t;
 
 % Reshape ICs for STM
 % var_stm = [test_X0;reshape(test_Phi0,[],1)];
@@ -83,12 +78,10 @@ for i = 1:length(t)
     pertt(i,:) = stm_p2(:,:,i) * pert;
 end
 
-% deltaxs{2} = pertt;
-% times{2} = t;
 
 % Plots
-% plot_rv_state(times,test_states,{"Given Data","Simulated Data"},false)
-% plot_rv_state(times,deltaxs,{"NL Propagation","STM Propagation"},true)
+% plot_rv_state(t,test_states,{"Given Data","Simulated Data"},false)
+% plot_rv_state(t,deltaxs,{"NL Propagation","STM Propagation"},true)
 
 r_labels = {'\deltax Position Difference [km]','\deltay Position Difference [km]','\deltaz Position Difference [km]'};
 v_labels = {'\deltav_x Velocity Difference [km/s]','\deltav_y Velocity Difference [km/s]','\deltav_z Velocity Difference [km/s]'};
@@ -178,13 +171,12 @@ el_mask = deg2rad(10); % deg -> rad
 
 % Generate measurements
 [measurements_real,gs_state] = genMeasurements(t,sall_lla,theta0,wE,el_mask,state_pert);
-[measurements_realJ3,gs_stateJ3] = genMeasurements(t,sall_lla,theta0,wE,el_mask,state_pertJ3);
 [measurements_nom,~] = genMeasurements(t,sall_lla,theta0,wE,el_mask,state_unpert);
 measurements_shift = measurements_real; % copy for adding Doppler calculations
 measurements_noisy = measurements_real; % copy for adding noise
 
 % Save measurements for HW 2
-save('simulation_data.mat','t','state_pert','state_unpert','measurements_real','measurements_nom','stm_p2','var','pert',"gs_state")
+save('simulation_dataJ2.mat','t','state_pert','state_unpert','measurements_real','measurements_nom','var','pert',"gs_state")
 
 % Plot a and b
 plot_measurements(t,measurements_real,station_ids)
@@ -316,3 +308,26 @@ lgd = legend(station_legend);
 lgd.Units = 'normalized';
 lgd.Position = [0.75 0.935 0.25 0.05];
 
+% For HW 2
+[tJ3,state_unpertJ3] = ode45(@(t,x) orbitEOM_J2_J3(t,x,mu,Re,J2,J3),tspan,var,options);
+[~,state_pertJ3] = ode45(@(t,x) orbitEOM_J2_J3(t,x,mu,Re,J2,J3),tJ3,var_pert,options);
+[measurements_realJ3,gs_stateJ3] = genMeasurements(tJ3,sall_lla,theta0,wE,el_mask,state_pertJ3);
+[measurements_nomJ3,~] = genMeasurements(tJ3,sall_lla,theta0,wE,el_mask,state_unpertJ3);
+
+% Save measurements for HW 2
+save('simulation_dataJ3.mat','tJ3','state_pertJ3','state_unpertJ3','measurements_realJ3','measurements_nomJ3','var','pert',"gs_stateJ3")
+
+% Plot differences
+meas_diff = cell(size(measurements_realJ3));
+for k = 1:numel(meas_diff)
+    mr = measurements_real{k};
+    mrJ3 = measurements_realJ3{k};
+    if isempty(mr)
+        continue
+    end
+    meas_diff{k} = [mr(1), mr(2:end) - mrJ3(2:end)];
+end
+plot_measurements(tJ3,meas_diff,station_ids)
+
+diffJ3 = {state_pert - state_pertJ3};
+plot_rv_state(tJ3,diffJ3,[],true)

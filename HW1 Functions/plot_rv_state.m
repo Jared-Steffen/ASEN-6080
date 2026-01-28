@@ -1,7 +1,7 @@
-function plot_rv_state(times,states,legends,delta_bool)
+function plot_rv_state(t,states,legends,delta_bool)
 %{
 Inputs:
-    >times: Cell array of time vectors
+    >t: time vectors
     >states: cell array of the time histories of the state variables to be
              plotted (corresponding to related time vector)
     >legends: optional list of legend categroies
@@ -33,7 +33,6 @@ end
 figure();
 for k = 1:length(states)
     state = states{k};
-    t = times{k};
     ls = lineStyles{k};
 
     % Plot r components
@@ -66,7 +65,6 @@ end
 figure();
 for k = 1:length(states)
     state = states{k};
-    t = times{k};
     ls = lineStyles{k};
 
     % Plot v components

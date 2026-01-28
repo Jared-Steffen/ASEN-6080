@@ -107,7 +107,7 @@ for i = length(tLKF)+1:length(tLKF) + length(tEKF) - 1
     % Integrate reference trajectory and stm to next time step
     current_tstep = [t(i-1) t(i)];
     state_stm = [Xhatim1(:);reshape(eye(n),[],1)];
-    options = odeset('RelTol',1e-10,'AbsTol',1e-10);
+    options = odeset('RelTol',1e-11,'AbsTol',1e-11);
     [~,sstm] = ode45(@(t,x) odeSTM_J2_rv(t,x,mu,Rp,J2),current_tstep,state_stm,options);
     last_sstm = sstm(end,:);
     Xbari = last_sstm(1:n);

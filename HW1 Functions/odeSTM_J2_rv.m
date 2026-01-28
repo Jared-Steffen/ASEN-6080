@@ -1,4 +1,4 @@
-function [stm_state_vec_dot] = odeSTM_J2(~,stm_state_vec,mu,R,J2)
+function [stm_state_vec_dot] = odeSTM_J2_rv(~,stm_state_vec,mu,R,J2)
 %{
 NOTE: This considers the effects of J2 orbital pertubations
 Inputs:
