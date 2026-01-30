@@ -21,7 +21,7 @@ set(groot,'defaultLineLineWidth',2)
 set(groot,'defaultAxesGridAlpha',0.3)
 set(groot,'defaultAxesXGrid','on')
 set(groot,'defaultAxesYGrid','on')
-lineStyles = {'-','--',':','-.'};
+lineStyles = {'--','-',':','-.'};
 markerStyles = {'.','o','x'};
 
 % State errors

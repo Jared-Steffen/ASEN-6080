@@ -62,13 +62,13 @@ for i = 1:length(t)
     % Measurement correction
     y(:,i) = yi - Htilde*xbari;
     dxhat(:,i) = xbari + Ki*y(:,i);
-    P(:,:,i) = (eye(n) - Ki*Htilde)*Pbari;
+    P(:,:,i) = (eye(n) - Ki*Htilde)*Pbari*(eye(n) - Ki*Htilde)' + Ki*R*Ki';
     yhat(:,i) = yi - Htilde*dxhat(:,i);
 
     % Move iteration forward
     xhatim1 = dxhat(:,i);
     Pim1 = P(:,:,i);
-
+    
 end
 
 % Add deviations to nominal trajectory

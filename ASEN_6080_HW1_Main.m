@@ -48,7 +48,7 @@ J3 = -2.5324e-6;
 % Get initial r and v
 [r0,v0] = oe2rv(mu,a,e,Omega,i,w,nu0);
 var = [r0;v0;J2];
-pert = [1 0 0 0 0.001 0 0]';
+pert = [1 1 1 1e-3 1e-3 1e-3 0]';
 % pert = [0.5 -0.7 0.2 0.0004 -0.0006 0.0002 0]';
 var_pert = var + pert;
 

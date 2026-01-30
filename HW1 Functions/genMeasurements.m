@@ -70,7 +70,7 @@ for i = 1:N
         el_angle = atan2(rR_top(3),norm(rR_top(1:2)));
 
         % Determine if measurements for station j are recorded
-        if el_angle >= el_mask
+        if isempty(el_mask) || el_angle >= el_mask
 
             % Record measurements
             rho = norm(sc_pos_eci - r_station_eci);

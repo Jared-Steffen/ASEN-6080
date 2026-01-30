@@ -100,7 +100,7 @@ end
 % Initial priori covariance and state error
 Pbar0 = diag([1,1,1,1e-3,1e-3,1e-3].^2);
 % xbar0 = zeros(6,1);
-xbar0 = [1 0 0 0 1e-3 0]';
+xbar0 = [1 1 1 1e-3 1e-3 1e-3]';
 
 % Only half the measurements
 % half_len = length(noisy_truth_measurementsJ2)/2;
@@ -120,8 +120,8 @@ plot_filter_diagnostics(tJ2,XtruthJ2,XhatLKF,PLKF,yhatLKF,'LKF');
 plot_filter_diagnostics(tJ2,XtruthJ2,XhatEKF,PEKF,yhatEKF,'EKF');
 
 % Batch J2
-tol = 1e-6;
-[XhatBLLS,PBLLS,yhatBLLS,batch_cnt] = orbitBatch(tJ2,xbar0,Pbar0,noisy_truth_measurementsJ2,R,XnomJ2,gs_stateJ2,mu,Re,J2,measurement_params,tol);
+tol = 1e-7;
+[XhatBLLS,PBLLS,yBLLS,yhatBLLS,batch_cnt] = orbitBatch(tJ2,xbar0,Pbar0,noisy_truth_measurementsJ2,R,XnomJ2,gs_stateJ2,mu,Re,J2,measurement_params,tol);
 plot_filter_diagnostics(tJ2,XtruthJ2,XhatBLLS(:,:,1),PBLLS(:,:,:,1),yhatBLLS(:,:,1),'First Batch LLS');
 % plot_filter_diagnostics(t,Xtruth,XhatBLLS(:,:,2),PBLLS(:,:,:,2),yhatBLLS(:,:,2),'Second Batch LLS');
 % plot_filter_diagnostics(t,Xtruth,XhatBLLS(:,:,3),PBLLS(:,:,:,3),yhatBLLS(:,:,3),'Third Batch LLS');
