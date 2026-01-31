@@ -35,6 +35,10 @@ batch_cnt = 0;
 err = 0.1;
 n = length(xbar0);
 Xhat(:,:,1) = Xnom;
+nt = length(t);
+y     = NaN(2,nt);
+yhat  = NaN(2,nt);
+P     = zeros(n,n,nt);
 
 % Iterative algorithm
 while err > tol

@@ -112,12 +112,12 @@ xbar0 = [1 1 1 1e-3 1e-3 1e-3]';
 % noisy_truth_measurementsJ2 = noisy_truth_measurementsJ2(1:half_len);
 
 % LKF J2
-[dxhat,XhatLKF,PLKF,yLKF,yhatLKF] = orbitLKF(tJ2,xbar0,Pbar0,LKF_Phii,noisy_truth_measurementsJ2,nom_measurementsJ2,R,XnomJ2,gs_stateJ2);
-plot_filter_diagnostics(tJ2,XtruthJ2,XhatLKF,PLKF,yhatLKF,'LKF');
+% [dxhat,XhatLKF,PLKF,yLKF,yhatLKF] = orbitLKF(tJ2,xbar0,Pbar0,LKF_Phii,noisy_truth_measurementsJ2,nom_measurementsJ2,R,XnomJ2,gs_stateJ2);
+% plot_filter_diagnostics(tJ2,XtruthJ2,XhatLKF,PLKF,yhatLKF,'LKF');
 
 % EKF J2
-[XhatEKF,PEKF,yEKF,yhatEKF] = orbitEKF(tJ2,xbar0,Pbar0,LKF_Phii,noisy_truth_measurementsJ2,nom_measurementsJ2,R,XnomJ2,gs_stateJ2,mu,Re,J2,measurement_params);
-plot_filter_diagnostics(tJ2,XtruthJ2,XhatEKF,PEKF,yhatEKF,'EKF');
+% [XhatEKF,PEKF,yEKF,yhatEKF] = orbitEKF(tJ2,xbar0,Pbar0,LKF_Phii,noisy_truth_measurementsJ2,nom_measurementsJ2,R,XnomJ2,gs_stateJ2,mu,Re,J2,measurement_params);
+% plot_filter_diagnostics(tJ2,XtruthJ2,XhatEKF,PEKF,yhatEKF,'EKF');
 
 % Batch J2
 tol = 1e-7;
