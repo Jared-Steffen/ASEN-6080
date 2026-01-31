@@ -1,4 +1,4 @@
-function [Xhat,P,y,yhat,batch_cnt] = orbitBatch(t,xbar0,Pbar0,Y,R,Xnom,gs_state,mu,Rp,J2,measurement_params,tol)
+function [Xhat,P,y,yhat,batch_cnt] = orbitBatch(t,xbar0,Pbar0,Y,R,Xnom,gs_state,constants,measurement_params,tol)
 %{
 Inputs:
     >t: time vector
@@ -8,9 +8,10 @@ Inputs:
     >R: measurement noise covariance matrix
     >Xnom: nominal trajectory state vector
     >gs_state: state of the ground stations in eci frame at each time step
-    >mu: gravitational parameter for central body
-    >Rp: radius of central body
-    >J2: J2 coefficient of central body
+    >constants: struct that contains:
+        -mu: gravitational parameter for central body
+        -Rp: radius of central body
+        -J2: J2 coefficient of central body
     >measurement_params: struct containing measurement station locations in
                          lla, initial angle of central body spin, angular
                          velocity of central body, elevation mask in
@@ -28,6 +29,11 @@ Outputs:
 stations_lla = measurement_params.sall_lla;
 theta0 = measurement_params.theta0;
 wE = measurement_params.wE;
+
+% Extract constatns
+mu = constants.mu;
+J2 = constants.J2;
+Rp = constants.Rp;
 
 % Initialize
 xbar = xbar0;
@@ -104,11 +110,7 @@ while err > tol
     xbar = xbar - dxhat;
 
     % Get covariance at each step and post fits
-    Phi_i0 = Phii(:,:,1);
     for i = 1:length(t)
-        % if i > 1
-        %     Phi_i0 = Phii(:,:,i) * Phi_i0;   % Φ(ti,t0) = Φ(ti,ti-1) * Φ(ti-1,t0)
-        % end
         P(:,:,i,k) = Phii(:,:,i)*P0*Phii(:,:,i)';
         Htilde = sc_range_ranger_Htilde(Xbari(i,:),gs_state(i,:));
         Hi = Htilde*Phii(:,:,i);
@@ -120,6 +122,7 @@ while err > tol
 end
 
 % Transpose outputs
+y = pagetranspose(y);
 yhat = pagetranspose(yhat);
 
 end

@@ -176,7 +176,7 @@ measurements_shift = measurements_real; % copy for adding Doppler calculations
 measurements_noisy = measurements_real; % copy for adding noise
 
 % Save measurements for HW 2
-save('simulation_dataJ2.mat','t','state_pert','state_unpert','measurements_real','measurements_nom','var','pert',"gs_state")
+save('simulation_dataJ2_test.mat','t','state_pert','state_unpert','measurements_real','measurements_nom','var','pert',"gs_state")
 
 % Plot a and b
 plot_measurements(t,measurements_real,station_ids)

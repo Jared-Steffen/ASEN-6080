@@ -29,6 +29,9 @@ measurement_params.el_mask = deg2rad(10);          % rad
 mu = 398600.4415;  % km^3/s^2
 J2 = 1.0826269e-3;
 Re = 6378; % km
+constants.mu = mu;
+constants.J2 = J2;
+constants.Rp = Re;
 
 % Load truth simulation data - J2
 dataJ2 = load("simulation_dataJ2.mat");
@@ -112,16 +115,17 @@ xbar0 = [1 1 1 1e-3 1e-3 1e-3]';
 % noisy_truth_measurementsJ2 = noisy_truth_measurementsJ2(1:half_len);
 
 % LKF J2
-% [dxhat,XhatLKF,PLKF,yLKF,yhatLKF] = orbitLKF(tJ2,xbar0,Pbar0,LKF_Phii,noisy_truth_measurementsJ2,nom_measurementsJ2,R,XnomJ2,gs_stateJ2);
-% plot_filter_diagnostics(tJ2,XtruthJ2,XhatLKF,PLKF,yhatLKF,'LKF');
+[XhatLKF,PLKF,yLKF,yhatLKF] = orbitLKF(tJ2,xbar0,Pbar0,noisy_truth_measurementsJ2,constants,measurement_params,R,XnomJ2,gs_stateJ2,3);
+plot_filter_diagnostics(tJ2,XtruthJ2,XhatLKF(:,:,1),PLKF(:,:,:,1),yhatLKF(:,:,1),'First LKF');
+plot_filter_diagnostics(tJ2,XtruthJ2,XhatLKF(:,:,end),PLKF(:,:,:,end),yhatLKF(:,:,end),'Final LKF');
 
 % EKF J2
-% [XhatEKF,PEKF,yEKF,yhatEKF] = orbitEKF(tJ2,xbar0,Pbar0,LKF_Phii,noisy_truth_measurementsJ2,nom_measurementsJ2,R,XnomJ2,gs_stateJ2,mu,Re,J2,measurement_params);
-% plot_filter_diagnostics(tJ2,XtruthJ2,XhatEKF,PEKF,yhatEKF,'EKF');
+[XhatEKF,PEKF,yEKF,yhatEKF] = orbitEKF(tJ2,xbar0,Pbar0,noisy_truth_measurementsJ2,R,XnomJ2,gs_stateJ2,constants,measurement_params);
+plot_filter_diagnostics(tJ2,XtruthJ2,XhatEKF,PEKF,yhatEKF,'EKF');
 
 % Batch J2
 tol = 1e-7;
-[XhatBLLS,PBLLS,yBLLS,yhatBLLS,batch_cnt] = orbitBatch(tJ2,xbar0,Pbar0,noisy_truth_measurementsJ2,R,XnomJ2,gs_stateJ2,mu,Re,J2,measurement_params,tol);
+[XhatBLLS,PBLLS,yBLLS,yhatBLLS,batch_cnt] = orbitBatch(tJ2,xbar0,Pbar0,noisy_truth_measurementsJ2,R,XnomJ2,gs_stateJ2,constants,measurement_params,tol);
 plot_filter_diagnostics(tJ2,XtruthJ2,XhatBLLS(:,:,1),PBLLS(:,:,:,1),yhatBLLS(:,:,1),'First Batch LLS');
 % plot_filter_diagnostics(t,Xtruth,XhatBLLS(:,:,2),PBLLS(:,:,:,2),yhatBLLS(:,:,2),'Second Batch LLS');
 % plot_filter_diagnostics(t,Xtruth,XhatBLLS(:,:,3),PBLLS(:,:,:,3),yhatBLLS(:,:,3),'Third Batch LLS');
