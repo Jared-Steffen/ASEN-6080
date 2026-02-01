@@ -78,8 +78,8 @@ for i = 1:length(tJ2)
     M(3) = M(3) + sigma_rdot*randn(n,1);
     noisy_truth_measurementsJ2{i} = M;
 end
-noisy_truth_measurementsJ3 = cell(length(tJ2),1);
-for i = 1:length(tJ2)
+noisy_truth_measurementsJ3 = cell(length(tJ3),1);
+for i = 1:length(tJ3)
     if isempty(truth_measurementsJ3{i})
         continue
     end
@@ -88,16 +88,6 @@ for i = 1:length(tJ2)
     M(2) = M(2) + sigma_r*randn(n,1);
     M(3) = M(3) + sigma_rdot*randn(n,1);
     noisy_truth_measurementsJ3{i} = M;
-end
-
-% LKF STM
-options = odeset('RelTol',1e-11,'AbsTol',1e-11);
-Phi0 = [X0;reshape(eye(6),[],1)];
-[~,Phii] = ode45(@(t,x) odeSTM_J2_rv(t,x,mu,Re,J2),tJ2,Phi0,options);
-
-% Extract STMs and reshape to be 7x7 and then propogate pertubations
-for i = 1:length(tJ2)
-    LKF_Phii(:,:,i) = reshape(Phii(i,7:end),6,6);
 end
 
 % Initial priori covariance and state error
