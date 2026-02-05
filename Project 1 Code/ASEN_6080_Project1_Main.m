@@ -46,25 +46,46 @@ t = Y(:,1);
 
 % Simulate Initial Orbit
 options = odeset('RelTol',1e-11,'AbsTol',1e-11);
-[t,Xnom1] = ode45(@(t,x) odeSTM_J2_Drag(t,x,constants),t,X0,options);
+[t,Xnom] = ode45(@(t,x) orbitEOM_J2_Drag(t,x,constants),t,X0,options);
 
 %% Batch Filter
 tol = 1e-3;
-[Xhat,P,y,yhat,batch_cnt] = orbitBatch(t,dx0,P0,Y,R,Xnom1,constants,stations,tol);
+[Xhat,P,y,yhat,batch_cnt] = orbitBatch(t,dx0,P0,Y,R,Xnom,constants,stations,tol);
 
 % Simulate Iteration Nominal Orbits
-% constantsBLLS2.mu = Xhat(1,7);
-% constantsBLLS2.J2 = Xhat(1,8);
-% constantsBLLS2.CD = Xhat(1,9);
-% constantsBLLS2.rho0 = 3.614e-4; % kg/km^3
-% constantsBLLS2.r0 = 700.0 + constants.RE; % km
-% constantsBLLS2.H = 88.667; % km
-% constantsBLLS2.A = 3e-6; % km^2 
-% constantsBLLS2.m = 970;  % kg
-% constantsBLLS2.RE = 6378.1363; % km
-% constantsBLLS2.wE = 7.2921158553e-5; % rad/s
-% [t,Xnom2] = ode45(@(t,x) orbitEOM_J2_Drag(t,x,constantsBLLS2),t,Xhat(1,:,2),options);
-% [t,Xnom3] = ode45(@(t,x) orbitEOM_J2_Drag(t,x,constants),t,Xhat(1,:,3),options);
+constantsBLLS1.mu = Xhat(1,7,1);
+constantsBLLS1.J2 = Xhat(1,8,1);
+constantsBLLS1.CD = Xhat(1,9,1);
+constantsBLLS1.rho0 = 3.614e-4; % kg/km^3
+constantsBLLS1.r0 = 700.0 + constants.RE; % km
+constantsBLLS1.H = 88.667; % km
+constantsBLLS1.A = 3e-6; % km^2 
+constantsBLLS1.m = 970;  % kg
+constantsBLLS1.RE = 6378.1363; % km
+constantsBLLS1.wE = 7.2921158553e-5; % rad/s
+[t,Xnom1] = ode45(@(t,x) orbitEOM_J2_Drag(t,x,constantsBLLS1),t,Xhat(1,:,1),options);
+constantsBLLS2.mu = Xhat(1,7,2);
+constantsBLLS2.J2 = Xhat(1,8,2);
+constantsBLLS2.CD = Xhat(1,9,2);
+constantsBLLS2.rho0 = 3.614e-4; % kg/km^3
+constantsBLLS2.r0 = 700.0 + constants.RE; % km
+constantsBLLS2.H = 88.667; % km
+constantsBLLS2.A = 3e-6; % km^2 
+constantsBLLS2.m = 970;  % kg
+constantsBLLS2.RE = 6378.1363; % km
+constantsBLLS2.wE = 7.2921158553e-5; % rad/s
+[t,Xnom2] = ode45(@(t,x) orbitEOM_J2_Drag(t,x,constantsBLLS2),t,Xhat(1,:,2),options);
+constantsBLLS3.mu = Xhat(1,7,3);
+constantsBLLS3.J2 = Xhat(1,8,3);
+constantsBLLS3.CD = Xhat(1,9,3);
+constantsBLLS3.rho0 = 3.614e-4; % kg/km^3
+constantsBLLS3.r0 = 700.0 + constants.RE; % km
+constantsBLLS3.H = 88.667; % km
+constantsBLLS3.A = 3e-6; % km^2 
+constantsBLLS3.m = 970;  % kg
+constantsBLLS3.RE = 6378.1363; % km
+constantsBLLS3.wE = 7.2921158553e-5; % rad/s
+[t,Xnom3] = ode45(@(t,x) orbitEOM_J2_Drag(t,x,constantsBLLS3),t,Xhat(1,:,3),options);
 
 plot_filter_diagnostics(t,Xnom1,Xhat(:,:,1),P(:,:,:,1),yhat(:,:,1),'First BLLS')
 plot_filter_diagnostics(t,Xnom2,Xhat(:,:,2),P(:,:,:,2),yhat(:,:,2),'Second BLLS')

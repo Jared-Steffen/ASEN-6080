@@ -33,7 +33,6 @@ xbar = xbar0;
 batch_cnt = 0;
 err = 0.1;
 n = length(xbar0);
-Xhat(:,:,1) = Xnom;
 nt = length(t);
 P = zeros(n,n,nt);
 
@@ -54,12 +53,12 @@ while err > tol
     state_stm = [Xbari';reshape(Phii,[],1)];
     options = odeset('RelTol',1e-11,'AbsTol',1e-11);
     [~,sstm] = ode45(@(t,x) odeSTM_J2_Drag(t,x,constants),t,state_stm,options);
-    Xhat(:,:,k) = sstm(:,1:n);
+    Xbar = sstm(:,1:n);
 
     for i = 1:length(t)
 
         % Get this time step's state info
-        Xbari(i,:) = sstm(i,1:n);
+        Xbari(i,:) = Xbar(i,:);
         Phii(:,:,i) = reshape(sstm(i,n+1:end),n,n);
     
         % Read next observation and determine station to pass to measurements
@@ -88,7 +87,7 @@ while err > tol
     Xnom(1,:) = Xnom(1,:) + dxhat';
     xbar = xbar - dxhat;
 
-    % Get covariance at each step and post fits
+    % Get covarianc, post fits, and corrected state
     for i = 1:length(t)
         P(:,:,i,k) = Phii(:,:,i)*P0*Phii(:,:,i)';
         M = Y(i,:);
@@ -96,7 +95,9 @@ while err > tol
         Htilde = linearizedH(t(i),Xbari(i,1:6),[current_id;gs_state(:,i)],constants,station_ids);
         Hi = Htilde*Phii(:,:,i);
         yhat(:,i,k) = y(:,i,k) - Hi*dxhat;
+        Xest(i,:) = Xbari(i,:) + (Phii(:,:,i)*dxhat).';
     end
+    Xhat(:,:,k) = Xest;
 
     % Increase counter
     batch_cnt = batch_cnt + 1;
