@@ -33,11 +33,13 @@ er3 = sqrt(sum(er.^2,2));  % 3D position error
 ev3 = sqrt(sum(ev.^2,2));  % 3D velocity error
 
 % 3 sigma bound
-% n = size(Xtrue,2);
 N = length(t);
 sig = zeros(N,6);
 for i = 1:N
     sig(i,:) = sqrt(diag(P(1:6,1:6,i))).';
+    if ~isreal(sig(i,:))
+        disp(i)
+    end
 end
 sig3 = 3*sig;
 
