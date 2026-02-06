@@ -1,19 +1,22 @@
-function plot_filter_diagnostics(t,Xtrue,Xhat,P,yhat,filter_type)
+function plot_filter_diagnostics(t,Xtrue,Xhat,P,y,yhat,station_id,filter_type,data_type)
 %{
 Inputs:
     >t: Nx1 time vector [s]
     >Xtrue: Nx6 true state history [km, km/s]
     >Xhat: Nx6 estimated state history [km, km/s]
     >P: 6x6xN state covariance history
-    >yhat: cell(N,1) OR numeric (Nxm) post-fit residuals
-    >R: measurement noise covariance matrix
+    >y:    Nx2 pre-fit residuals  [range(km), range-rate(km/s)] (NaNs allowed)
+    >yhat: Nx2 post-fit residuals [range(km), range-rate(km/s)] (NaNs allowed)
+    >station_id: Nx1 station ID associated with each residual time step
     >filter_type: string of filter name for plots
+    >data_type: string of "range" or "range rate" if only considering
+                one (or empty for both)
 Outputs:
     > State errors vs time with ±3σ covariance bounds
-    > Post-fit measurement residuals with noise comparison
+    > Pre-fit and post-fit residuals (time series + QQ), color-coded by station
 %}
 
-% Plot formatting
+%% Plot formatting
 set(groot,'defaultFigureColor','w')
 set(groot,'defaultAxesFontSize',14)
 set(groot,'defaultAxesLineWidth',1.2)
@@ -21,36 +24,35 @@ set(groot,'defaultLineLineWidth',2)
 set(groot,'defaultAxesGridAlpha',0.3)
 set(groot,'defaultAxesXGrid','on')
 set(groot,'defaultAxesYGrid','on')
-lineStyles = {'--','-',':','-.'};
+lineStyles   = {'--','-',':','-.'};
 markerStyles = {'.','o','x'};
 
-% State errors
-e  = Xhat - Xtrue;     % Nx6
-er = e(:,1:3);        % position error
-ev = e(:,4:6);        % velocity error
+%% State errors
+e = Xhat - Xtrue;
+er = e(:,1:3); 
+ev = e(:,4:6); 
+er3 = sqrt(sum(er.^2,2));
+ev3 = sqrt(sum(ev.^2,2));
 
-er3 = sqrt(sum(er.^2,2));  % 3D position error
-ev3 = sqrt(sum(ev.^2,2));  % 3D velocity error
-
-% 3 sigma bound
+% 3-sigma bounds
 N = length(t);
 sig = zeros(N,6);
 for i = 1:N
     sig(i,:) = sqrt(diag(P(1:6,1:6,i))).';
     if ~isreal(sig(i,:))
-        disp(i)
+        disp("Non-real sigma at index i = " + i)
     end
 end
 sig3 = 3*sig;
 
-% State error plots
+%% State error plots
 r_labels = {'x Error [km]','y Error [km]','z Error [km]'};
 v_labels = {'v_x Error [km/s]','v_y Error [km/s]','v_z Error [km/s]'};
 
 figure();
 for k = 1:3
     subplot(3,1,k); hold on
-    plot(t/3600, er(:,k), markerStyles{1})
+    plot(t/3600, er(:,k), markerStyles{1},'MarkerSize',8)
     line = plot(t/3600, +sig3(:,k), lineStyles{2});
     plot(t/3600, -sig3(:,k), lineStyles{2},'Color',line.Color)
     xlabel('Time [hr]')
@@ -65,7 +67,7 @@ lgd.Position = [0.75 0.935 0.25 0.05];
 figure();
 for k = 1:3
     subplot(3,1,k); hold on
-    plot(t/3600, ev(:,k), markerStyles{1});
+    plot(t/3600, ev(:,k), markerStyles{1},'MarkerSize',8);
     line = plot(t/3600, +sig3(:,k+3), lineStyles{2});
     plot(t/3600, -sig3(:,k+3), lineStyles{2},'Color',line.Color)
     xlabel('Time [hr]')
@@ -77,51 +79,103 @@ lgd = legend({'Error','\pm3\sigma'});
 lgd.Units = 'normalized';
 lgd.Position = [0.75 0.935 0.25 0.05];
 
-% Residual plot labels
-y_labels = {'Range [km]','Range Rate [km/s]'};
-y_labels_QQ = {'Quantiles of Range','Quantiles of Range Rate'};
-titles_QQ = {filter_type + " QQ Plot of Range Residuals vs Standard Normal",filter_type + " QQ Plot of Range Rate Residuals vs Standard Normal"};
-
-% Post fit residuals
-figure()
-for k = 1:2
-    subplot(2,1,k); hold on
-    plot(t/3600, yhat(:,k), markerStyles{1})
-    xlabel('Time [hr]')
-    ylabel(y_labels{k})
+%% Residual plots (pre + post)
+if data_type == "range"
+    y_labels_time = {'Range Residual [km]'};
+    y_labels_QQ = {'Quantiles of Range Residual'};
+elseif data_type == "range rate"
+    y_labels_time = {'Range-Rate Residual [km/s]'};
+    y_labels_QQ = {'Quantiles of Range-Rate Residual'};
+else
+    y_labels_time = {'Range Residual [km]','Range-Rate Residual [km/s]'};
+    y_labels_QQ = {'Quantiles of Range Residual','Quantiles of Range-Rate Residual'};
 end
-sgtitle(filter_type + " Measurement Post-Fit Residuals")
 
-% Post fit residuals QQ Plot
-figure()
-for k = 1:2
-    subplot(2,1,k); hold on
+% Station coloring
+stn = station_id(:);
+ustn = unique(stn(~isnan(stn)));
+ns = numel(ustn);
+C = lines(max(ns,1));
+function time_scatter_by_station(t_hr, residual_vec, stn_vec, ylabel_str)
+    hold on; grid on
+    for s = 1:ns
+        sid = ustn(s);
+        m = (stn_vec == sid) & ~isnan(residual_vec);
+        if ~any(m), continue; end
+        scatter(t_hr(m), residual_vec(m), 14, C(s,:), 'filled', 'MarkerFaceAlpha', 0.75);
+    end
+    xlabel('Time [hr]')
+    ylabel(ylabel_str)
+    if ns > 0
+        legend(arrayfun(@(x) "Station " + string(x), ustn, 'UniformOutput', false), ...
+               'Location','northeast')
+    end
+end
+
+m_meas = size(y,2);   % number of measurement types
+
+% Pre-fit
+figure();
+for k = 1:m_meas
+    % Residual vs time
+    nexttile(2*k-1);
+    time_scatter_by_station(t/3600, y(:,k), stn, y_labels_time{k});
+    title(filter_type + " Pre-Fit Residuals (" + y_labels_time{k} + ")")
+
+    % QQ plot
+    nexttile(2*k);
+    qqplot(y(:,k))
+    ylabel(y_labels_QQ{k})
+    title(filter_type + " Pre-Fit QQ (" + y_labels_time{k} + ")")
+end
+
+%Post-fit
+figure();
+
+for k = 1:m_meas
+    % Residual vs time
+    nexttile(2*k-1);
+    time_scatter_by_station(t/3600, yhat(:,k), stn, y_labels_time{k});
+    title(filter_type + " Post-Fit Residuals (" + y_labels_time{k} + ")")
+
+    % QQ plot
+    nexttile(2*k);
     qqplot(yhat(:,k))
     ylabel(y_labels_QQ{k})
-    title(titles_QQ{k})
+    title(filter_type + " Post-Fit QQ (" + y_labels_time{k} + ")")
 end
 
-% RMS
-rms_xyz = rms(er);
-rms_vxvyvz = rms(ev);
-rms_r = rms(er3);
-rms_v = rms(ev3);
-rms_res = rms(yhat,'omitnan');
+%% RMS 
+rms_xyz = rms(er,'omitnan');
+rms_vxvyvz = rms(ev,'omitnan');
+rms_r = rms(er3,'omitnan');
+rms_v = rms(ev3,'omitnan');
 
 disp("--- " + filter_type + " Position RMS Errors [km] ---")
 disp(['RMS x = ', num2str(rms_xyz(1))])
 disp(['RMS y = ', num2str(rms_xyz(2))])
 disp(['RMS z = ', num2str(rms_xyz(3))])
 disp(['3D Position RMS = ', num2str(rms_r)])
+
 disp("--- " + filter_type + " Velocity RMS Errors [km/s] ---")
 disp(['RMS vx = ', num2str(rms_vxvyvz(1))])
 disp(['RMS vy = ', num2str(rms_vxvyvz(2))])
 disp(['RMS vz = ', num2str(rms_vxvyvz(3))])
 disp(['3D Velocity RMS = ', num2str(rms_v)])
-disp("--- " + filter_type + " Post-fit Residual RMS [km]/[km/s] ---")
-disp(['Range Residual RMS = ', num2str(rms_res(1))])
-disp(['Range Rate Residual RMS = ', num2str(rms_res(2))])
 
+rms_prefit = rms(y,'omitnan');
+rms_postfit = rms(yhat,'omitnan');
 
+m = size(y,2);
+
+disp("--- " + filter_type + " Pre-fit Residual RMS ---")
+for k = 1:m
+    disp([y_labels_time{k}, ' RMS = ', num2str(rms_prefit(k))])
 end
 
+disp("--- " + filter_type + " Post-fit Residual RMS ---")
+for k = 1:m
+    disp([y_labels_time{k}, ' RMS = ', num2str(rms_postfit(k))])
+end
+
+end

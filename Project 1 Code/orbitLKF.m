@@ -25,6 +25,9 @@ Outputs:
     >yhat: post-fit residuals
 %}
 
+% Set ode tolerance
+options = odeset('RelTol',1e-11,'AbsTol',1e-11);
+
 % Extract info
 station_ids = stations.station_ids;
 
@@ -43,13 +46,11 @@ for j = 1:num_iterations
     % Reset for this iteration
     Pim1 = Pbar0;
     xhatim1 = xbar0;
-    
+
     % Integrate current initial condition
     state_stm = [X0';reshape(eye(n),[],1)];
-    options = odeset('RelTol',1e-11,'AbsTol',1e-11);
     [~,sstm] = ode45(@(t,x) odeSTM_J2_Drag(t,x,constants),t,state_stm,options);
     Xbar = sstm(:,1:n);
-
 
     % Iterative algorithm
     for i = 1:length(t)
@@ -66,7 +67,7 @@ for j = 1:num_iterations
     
         % Time update
         if i > 1
-            Phii = Phi(:,:,i)*Phi(:,:,i-1)\eye(n);
+            Phii = Phi(:,:,i)\Phi(:,:,i-1);
         else
             Phii = Phi(:,:,i);
         end

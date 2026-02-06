@@ -1,4 +1,4 @@
-function [Xhat,P,y,yhat,batch_cnt] = orbitBatch(t,xbar0,Pbar0,Y,R,Xnom,constants,stations,tol)
+function [Xhat,P,y,yhat,batch_cnt] = orbitBatch(t,xbar0,Pbar0,Y,R,Xnom,constants,stations,tol,data_type)
 %{
 Inputs:
     >t: time vector
@@ -17,6 +17,8 @@ Inputs:
         -theta0: initial spin angle of Earth in simulation in radians
         -el_mask: elevation mask for GS to S/C visibility in radians
     >tol: error tolerance to stop iterations of batch filter
+    >data_type: string of "range" or "range rate" if only considering
+                one (or empty for both)
 Outputs:
     >Xhat: full predicted state
     >P: state history of estimated state covariance
@@ -24,6 +26,9 @@ Outputs:
     >yhat: post-fit residuals for each batch
     >batch_cnt: number of batches it took to converge
 %}
+
+% Set ode tolerance
+options = odeset('RelTol',1e-11,'AbsTol',1e-11);
 
 % Extract info
 station_ids = stations.station_ids;
@@ -51,7 +56,6 @@ while err > tol
 
     % Integrate current initial condition
     state_stm = [Xbari';reshape(Phii,[],1)];
-    options = odeset('RelTol',1e-11,'AbsTol',1e-11);
     [~,sstm] = ode45(@(t,x) odeSTM_J2_Drag(t,x,constants),t,state_stm,options);
     Xbar = sstm(:,1:n);
 
@@ -71,11 +75,22 @@ while err > tol
         [G,gs_state(:,i)] = genSingleMeasurement(t(i),stations,current_station,constants,Xbari(i,1:6));
 
         % Prefits and update
-        y(:,i,k) = M(:,3:4)' - G(:,2:3)';
         Htilde = linearizedH(t(i),Xbari(i,1:6),[current_id;gs_state(:,i)],constants,station_ids);
+        if data_type == "range"
+            R_1 = R(1,1);
+            Htilde = Htilde(1,:);
+            y(:,i,k) = M(:,3)' - G(:,2)';
+        elseif data_type == "range rate"
+            R_1 = R(2,2);
+            Htilde = Htilde(2,:);
+            y(:,i,k) = M(:,4)' - G(:,3)';
+        else
+            R_1 = R;
+            y(:,i,k) = M(:,3:4)' - G(:,2:3)';
+        end
         Hi = Htilde*Phii(:,:,i);
-        Lambda = Lambda + Hi'/R*Hi;
-        N = N + Hi'/R*y(:,i,k);
+        Lambda = Lambda + Hi'/R_1*Hi;
+        N = N + Hi'/R_1*y(:,i,k);
     end
 
     % Solve normal equations  
