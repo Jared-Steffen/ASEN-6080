@@ -79,14 +79,14 @@ while err > tol
         if data_type == "range"
             R_1 = R(1,1);
             Htilde = Htilde(1,:);
-            y(:,i,k) = M(:,3)' - G(:,2)';
+            y(:,i,k) = M(3)' - G(2)';
         elseif data_type == "range rate"
             R_1 = R(2,2);
             Htilde = Htilde(2,:);
-            y(:,i,k) = M(:,4)' - G(:,3)';
+            y(:,i,k) = M(4)' - G(3)';
         else
             R_1 = R;
-            y(:,i,k) = M(:,3:4)' - G(:,2:3)';
+            y(:,i,k) = M(3:4)' - G(2:3)';
         end
         Hi = Htilde*Phii(:,:,i);
         Lambda = Lambda + Hi'/R_1*Hi;
