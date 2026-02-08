@@ -28,7 +28,7 @@ Outputs:
 %}
 
 % Set ode tolerance
-options = odeset('RelTol',1e-11,'AbsTol',1e-11);
+options = odeset('RelTol',1e-12,'AbsTol',1e-12);
 
 % Extract info
 station_ids = stations.station_ids;

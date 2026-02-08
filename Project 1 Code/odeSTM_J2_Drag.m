@@ -1,4 +1,4 @@
-function [stm_var_dot] = odeSTM_J2_Drag(~,stm_var,constants)
+function [stm_var_dot] = odeSTM_J2_Drag(t,stm_var,constants)
 %{
 NOTE: This considers the effects of J2 and drag orbital pertubations
 Inputs:

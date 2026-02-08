@@ -39,7 +39,7 @@ P = zeros(n, n, length(t), num_iterations);
 y = NaN(2, length(t), num_iterations);
 yhat = NaN(2, length(t), num_iterations);
 Xhat = zeros(length(t), n, num_iterations);
-X0 = Xnom(1,:);
+X0 = Xnom(1,1:n);
 
 for j = 1:num_iterations
     
@@ -67,7 +67,7 @@ for j = 1:num_iterations
     
         % Time update
         if i > 1
-            Phii = Phi(:,:,i)\Phi(:,:,i-1);
+            Phii = Phi(:,:,i)/Phi(:,:,i-1);
         else
             Phii = Phi(:,:,i);
         end
@@ -77,15 +77,14 @@ for j = 1:num_iterations
         % Extract station id and generate measurement
         [G,gs_state(:,i)] = genSingleMeasurement(t(i),stations,current_station,constants,Xbari(i,1:6));
 
-        yi = M(:,3:4)' - G(:,2:3)';
+        y(:,i,j) = M(:,3:4)' - G(:,2:3)';
         Htilde = linearizedH(t(i),Xbari(i,1:6),[current_id;gs_state(:,i)],constants,station_ids);
         Ki = Pbari*Htilde'/(Htilde*Pbari*Htilde' + R);
     
         % Measurement correction
-        y(:,i,j) = yi - Htilde*xbari;
-        dxhat(:,i) = xbari + Ki*y(:,i,j);
+        dxhat(:,i) = xbari + Ki*(y(:,i,j)- Htilde*xbari);
         P(:,:,i,j) = (eye(n) - Ki*Htilde)*Pbari*(eye(n) - Ki*Htilde)' + Ki*R*Ki';
-        yhat(:,i,j) = yi - Htilde*dxhat(:,i);
+        yhat(:,i,j) = y(:,i,j) - Htilde*dxhat(:,i);
     
         % Move iteration forward
         xhatim1 = dxhat(:,i);
