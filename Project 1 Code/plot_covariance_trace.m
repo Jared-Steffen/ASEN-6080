@@ -26,12 +26,14 @@ figure();
 
 subplot(2,1,1); hold on; grid on
 plot(t/3600, trace_pos,'-o', 'LineWidth', 2)
+set(gca,'YScale','log')
 xlabel('Time [hr]')
 ylabel('tr(P_{rr}) [km^2]')
 title(filter_type + " Position Covariance Trace")
 
 subplot(2,1,2); hold on; grid on
 plot(t/3600, trace_vel,'-o', 'LineWidth', 2)
+set(gca,'YScale','log')
 xlabel('Time [hr]')
 ylabel('tr(P_{vv}) [(km/s)^2]')
 title(filter_type + " Velocity Covariance Trace")

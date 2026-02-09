@@ -1,51 +1,74 @@
-function plot_covariance_ellipsoids(P,filter_type)
-% plot_covariance_ellipsoids
+function plot_covariance_ellipsoids(P, filter_type)
 %{
 Inputs:
-    >Xhat: Nx6 estimated state history [km, km/s]
-    >P: 6x6xN covariance history
-    >filter_type: string label (e.g. "Batch", "CKF")
+    >P: 6x6xN covariance history OR cell array of covariance histories
+    >filter_type: string label OR cell/string array of labels
 Outputs:
-    > 3σ POSITION and VELOCITY axis-aligned covariance ellipsoids at final time
+    > 3sigma 2D position covariance ellipses (x-y, x-z, y-z) at final time
+    > Allows multiple filters to be overlaid for comparison
 %}
 
-%% Final state and covariance
-PF = P(:,:,end);     
+% Allow single or multiple inputs
+if ~iscell(P)
+    P = {P};
+end
 
+if ~iscell(filter_type)
+    filter_type = cellstr(filter_type);
+end
 
-Pr = PF(1:3,1:3);   % symmetrize
-Pv = PF(4:6,4:6);
+% If one label but multiple covariances, auto-number
+if numel(filter_type) == 1 && numel(P) > 1
+    base = string(filter_type{1});
+    filter_type = cellstr(base + " " + string(1:numel(P)));
+end
 
 nsig = 3;
+npts = 200;
+th = linspace(0,2*pi,npts);
 
-%% Axis-aligned 3σ radii
-sig_r = sqrt(diag(Pr));
-sig_v = sqrt(diag(Pv));
+% Extract final-time position covariances
+M = numel(P);
+Pr = zeros(3,3,M);
 
-rx = nsig*sig_r(1); ry = nsig*sig_r(2); rz = nsig*sig_r(3);
-rvx = nsig*sig_v(1); rvy = nsig*sig_v(2); rvz = nsig*sig_v(3);
+for i = 1:M
+    PF = P{i}(:,:,end);
+    Pr(:,:,i) = PF(1:3,1:3);  % position block
+end
 
-%% ===== Position ellipsoid =====
-figure(); hold on; grid on; axis equal; view(3)
+% Coordinate pairs: x-y, x-z, y-z
+pairs = {[1 2],'x-y','x [km]','y [km]'; ...
+         [1 3],'x-z','x [km]','z [km]'; ...
+         [2 3],'y-z','y [km]','z [km]'};
 
-ellipsoid(0, 0, 0, rx, ry, rz)
-% xlim(rF(1) + [-rx rx])
-% ylim(rF(2) + [-ry ry])
-% zlim(rF(3) + [-rz rz])
+figure();
+tiledlayout(1,3,'TileSpacing','compact','Padding','compact');
 
-xlabel('x [km]'); ylabel('y [km]'); zlabel('z [km]')
-title(filter_type + " Final-Time Position Covariance Ellipsoid (±3σ)")
+for k = 1:3
+    ij   = pairs{k,1};
+    name = pairs{k,2};
+    xl   = pairs{k,3};
+    yl   = pairs{k,4};
 
-%% ===== Velocity ellipsoid =====
-figure(); hold on; grid on; axis equal; view(3)
+    nexttile; hold on; grid on; axis equal;
+    title(name)
+    xlabel(xl); ylabel(yl);
 
-ellipsoid(0, 0, 0, rvx, rvy, rvz)
+    for i = 1:M
+        % 2x2 covariance (no clamping)
+        C2 = Pr(ij,ij,i);
 
-% xlim(vF(1) + [-rvx rvx])
-% ylim(vF(2) + [-rvy rvy])
-% zlim(vF(3) + [-rvz rvz])
+        % Eigen-decomposition ellipse
+        [V,D] = eig(C2);
+        A = V * diag(sqrt(diag(D))) * nsig;
 
-xlabel('v_x [km/s]'); ylabel('v_y [km/s]'); zlabel('v_z [km/s]')
-title(filter_type + " Final-Time Velocity Covariance Ellipsoid (±3σ)")
+        xy = A * [cos(th); sin(th)];
+        plot(xy(1,:), xy(2,:), 'LineWidth', 1.5);
+    end
+
+    legend(string(filter_type), 'Location','northeast');
+    sgtitle('Covariance Ellipsoids')
+
+end
 
 end

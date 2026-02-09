@@ -1,12 +1,13 @@
-function plot_filter_diagnostics(t,Xtrue,Xhat,P,y,yhat,station_id,filter_type,data_type)
+function plot_filter_diagnostics(t,Xtrue,Xhat,P,y,yhat,R,station_id,filter_type,data_type)
 %{
 Inputs:
     >t: Nx1 time vector [s]
     >Xtrue: Nx6 true state history [km, km/s]
     >Xhat: Nx6 estimated state history [km, km/s]
     >P: 6x6xN state covariance history
-    >y:    Nx2 pre-fit residuals  [range(km), range-rate(km/s)] (NaNs allowed)
+    >y: Nx2 pre-fit residuals  [range(km), range-rate(km/s)] (NaNs allowed)
     >yhat: Nx2 post-fit residuals [range(km), range-rate(km/s)] (NaNs allowed)
+    >R: measurement noise covariance matrix
     >station_id: Nx1 station ID associated with each residual time step
     >filter_type: string of filter name for plots
     >data_type: string of "range" or "range rate" if only considering
@@ -45,6 +46,7 @@ for i = 1:N
 end
 sig3 = 3*sig;
 
+
 %% State error plots
 r_labels = {'x Error [km]','y Error [km]','z Error [km]'};
 v_labels = {'v_x Error [km/s]','v_y Error [km/s]','v_z Error [km/s]'};
@@ -53,8 +55,8 @@ figure();
 for k = 1:3
     subplot(3,1,k); hold on
     plot(t/3600, er(:,k), markerStyles{1},'MarkerSize',8)
-    line = plot(t/3600, +sig3(:,k), lineStyles{2});
-    plot(t/3600, -sig3(:,k), lineStyles{2},'Color',line.Color)
+    line = plot(t/3600, +sig3(:,k), lineStyles{1});
+    plot(t/3600, -sig3(:,k), lineStyles{1},'Color',line.Color)
     xlabel('Time [hr]')
     ylabel(r_labels{k})
 end
@@ -68,8 +70,8 @@ figure();
 for k = 1:3
     subplot(3,1,k); hold on
     plot(t/3600, ev(:,k), markerStyles{1},'MarkerSize',8);
-    line = plot(t/3600, +sig3(:,k+3), lineStyles{2});
-    plot(t/3600, -sig3(:,k+3), lineStyles{2},'Color',line.Color)
+    line = plot(t/3600, +sig3(:,k+3), lineStyles{1});
+    plot(t/3600, -sig3(:,k+3), lineStyles{1},'Color',line.Color)
     xlabel('Time [hr]')
     ylabel(v_labels{k})
 end
@@ -83,13 +85,17 @@ lgd.Position = [0.75 0.935 0.25 0.05];
 if data_type == "range"
     y_labels_time = {'Range Residual [km]'};
     y_labels_QQ = {'Quantiles of Range Residual'};
+    sig_res = sqrt(R(1,1)).';
 elseif data_type == "range rate"
     y_labels_time = {'Range-Rate Residual [km/s]'};
     y_labels_QQ = {'Quantiles of Range-Rate Residual'};
+    sig_res = sqrt(R(2,2)).';
 else
     y_labels_time = {'Range Residual [km]','Range-Rate Residual [km/s]'};
     y_labels_QQ = {'Quantiles of Range Residual','Quantiles of Range-Rate Residual'};
+    sig_res = sqrt(diag(R)).';
 end
+sig_res3 = 3.*sig_res;
 
 % Station coloring
 stn = station_id(:);
@@ -120,6 +126,18 @@ for k = 1:m_meas
     % Residual vs time
     nexttile(2*k-1);
     time_scatter_by_station(t/3600, y(:,k), stn, y_labels_time{k});
+    hold on
+
+    ax = gca;
+
+    % +/- 3sigma bounds
+    ub =  sig_res3(k) * ones(size(t));
+    lb = -sig_res3(k) * ones(size(t));
+    
+    h3u = plot(t/3600, ub, lineStyles{1}, 'LineWidth',1.5, 'DisplayName','\pm3\sigma');
+    plot(t/3600, lb, lineStyles{1}, 'LineWidth',1.5, 'Color', h3u.Color, ...
+           'HandleVisibility','off');
+
     title(filter_type + " Pre-Fit Residuals (" + y_labels_time{k} + ")")
 
     % QQ plot
@@ -129,13 +147,22 @@ for k = 1:m_meas
     title(filter_type + " Pre-Fit QQ (" + y_labels_time{k} + ")")
 end
 
-%Post-fit
+% Post-fit
 figure();
-
 for k = 1:m_meas
     % Residual vs time
     nexttile(2*k-1);
     time_scatter_by_station(t/3600, yhat(:,k), stn, y_labels_time{k});
+    hold on
+
+    % +/- 3sigma bounds (constant over time)
+    ub =  sig_res3(k) * ones(size(t));
+    lb = -sig_res3(k) * ones(size(t));
+
+    h3u = plot(t/3600, ub, lineStyles{1}, 'LineWidth',1.5, 'DisplayName','\pm3\sigma');
+    plot(t/3600, lb, lineStyles{1}, 'LineWidth',1.5, 'Color', h3u.Color, ...
+               'HandleVisibility','off');
+
     title(filter_type + " Post-Fit Residuals (" + y_labels_time{k} + ")")
 
     % QQ plot
@@ -144,7 +171,6 @@ for k = 1:m_meas
     ylabel(y_labels_QQ{k})
     title(filter_type + " Post-Fit QQ (" + y_labels_time{k} + ")")
 end
-
 %% RMS 
 rms_xyz = rms(er,'omitnan');
 rms_vxvyvz = rms(ev,'omitnan');

@@ -52,7 +52,7 @@ while err > tol
     Lambda = Pbar_inv;
     N = Lambda*xbar;
     Phii = eye(n);
-    Xbari = Xnom(1,:);
+    Xbari = Xnom(1,1:n);
 
     % Integrate current initial condition
     state_stm = [Xbari';reshape(Phii,[],1)];
@@ -99,7 +99,7 @@ while err > tol
     P0 = LR_inv*LR_inv';
     dxhat = P0*N;
     err = norm(dxhat);
-    Xnom(1,:) = Xnom(1,:) + dxhat';
+    Xnom(1,1:n) = Xnom(1,1:n) + dxhat';
     xbar = xbar - dxhat;
 
     % Get covarianc, post fits, and corrected state
