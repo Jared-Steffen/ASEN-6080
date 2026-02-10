@@ -1,4 +1,4 @@
-function [Xhat,P,y,yhat] = orbitEKF(t,xbar0,Pbar0,Y,R,Xnom,gs_state,constants,measurement_params)
+function [Xhat,P,y,yhat] = orbitEKF(t,xbar0,Pbar0,Y,R,Xnom,constants,stations,LKFinit)
 %{
 Inputs:
     >t: time vector
@@ -6,15 +6,21 @@ Inputs:
     >Pbar0: initialized state covariance matrix
     >Y: simulated actual measurement data for true trajectory
     >R: measurement noise covariance matrix
-    >gs_state: state of the ground stations in eci frame at each time step
     >constants: struct that contains:
-        -mu: gravitational parameter for central body
-        -Rp: radius of central body
-        -J2: J2 coefficient of central body
-    >measurement_params: struct containing measurement station locations in
-                         lla, initial angle of central body spin, angular
-                         velocity of central body, elevation mask in
-                         degrees
+        -mu: Earth's gravitational parameter mu
+        -J2: Earth's J2 coefficient
+        -RE: Earth's radius
+        -wE: Earth's rotation rate
+        -CD: S/C drag coefficient
+        -A: S/C cross sectional area (assuming spherical)
+        -m: S/C mass
+        -H, r0, rho0: atmospheric drag model constants
+    >stations: struct containing information on stations:
+        -Rs: positions of each station in the ecef frame
+        -station_ids: stations ids correspoding to stations in Rs
+        -theta0: initial spin angle of Earth in simulation in radians
+        -el_mask: elevation mask for GS to S/C visibility in radians
+    >LKFinit: number of measurements to process with the LKF to initialize
 Outputs:
     >Xhat: full predicted state (dxhat + Xnom)
     >P: state history of estimated state covariance
@@ -22,15 +28,11 @@ Outputs:
     >yhat: post-fit residuals
 %}
 
-% Extract measurement params
-stations_lla = measurement_params.sall_lla;
-theta0 = measurement_params.theta0;
-wE = measurement_params.wE;
+% Set ode tolerance
+options = odeset('RelTol',1e-11,'AbsTol',1e-11);
 
-% Extract constatns
-mu = constants.mu;
-J2 = constants.J2;
-Rp = constants.Rp;
+% Extract info
+station_ids = stations.station_ids;
 
 % Initialize
 Pim1 = Pbar0;
@@ -38,39 +40,29 @@ xhatim1 = xbar0;
 n = length(xbar0);
 X0 = Xnom(1,:);
 
-% Determine time step to stop LKF initialization at
-obs_counter = 0;
-for i = 1:length(t)
-    M = Y{i};
-        if isempty(M)
-            continue
-        end
-        obs_counter = obs_counter + 1;
-        if obs_counter == 100
-            tLKF = t(1:i);
-            tEKF = t(i:end);
-            break
-        end
-end     
-
-% Iterative algorithm for LKF initialization
-state_stm = [X0';reshape(eye(n),[],1)];
-options = odeset('RelTol',1e-11,'AbsTol',1e-11);
-[~,sstm] = ode45(@(t,x) odeSTM_J2_rv(t,x,mu,Rp,J2),t,state_stm,options);
-Xref = sstm(:,1:n);
-
-% Generate measurements for this initial conditions
-[G,~] = genMeasurements(t,stations_lla,theta0,wE,[],Xref);
-
+if LKFinit > 0
+    % Determine time step to stop LKF initialization at
+    tLKF = t(1:LKFinit);
+    
+    % Integrate current initial condition
+    Xref = [X0';reshape(eye(n),[],1)];
+    [~,Xint] = ode45(@(t,x) odeSTM_J2_Drag(t,x,constants),tLKF,Xref,options);
+    Xbar = Xint(:,1:n);
+    
     % Iterative algorithm
     for i = 1:length(tLKF)
     
-        % Read next observation and expected observation
-        M = Y{i};
-        Mn = G{i};
+        % Get this time step's state info
+        Xbari(i,:) = Xbar(i,:);
+        Phi(:,:,i) = reshape(Xint(i,n+1:end),n,n);
+    
+        % Read next observation and determine station to pass to measurements
+        M = Y(i,:);
+        current_id = M(2);
+        idx = find(current_id == station_ids);
+        current_station = [current_id, Xbari(i,9+3*(idx-1)+(1:3))];
     
         % Time update
-        Phi(:,:,i) = reshape(sstm(i,n+1:end),n,n);
         if i > 1
             Phii = Phi(:,:,i)/Phi(:,:,i-1);
         else
@@ -79,99 +71,66 @@ Xref = sstm(:,1:n);
         xbari = Phii*xhatim1;
         Pbari = Phii*Pim1*Phii';
     
-        % Computes observation deviation and Kalman Gain
-        if isempty(M)
-            dxhat(:,i) = xbari;
-            P(:,:,i) = Pbari;
-            y(:,i) = NaN;
-            yhat(:,i) = NaN;
+        % Extract station id and generate measurement
+        [G,gs_state] = genSingleMeasurement(t(i),stations,current_station,constants,Xbari(i,1:6));
     
-            % Move iteration forward
-            xhatim1 = dxhat(:,i);
-            Pim1 = P(:,:,i);
-            continue % skips measurement update if no measurement available
-        end
-        % Select correct station measurement
-        for k = 1:size(Mn,1)
-            if Mn(k,1) ~= M(1)
-                continue
-            else
-                Mnj = Mn(k,:);
-                break
-            end
-        end
-
-        yi = M(:,2:3)' - Mnj(:,2:3)';
-        Htilde = sc_range_ranger_Htilde(Xref(i,:),gs_state(i,:));
+        y(:,i) = M(:,3:4)' - G(:,2:3)';
+        Htilde = linearizedH(t(i),Xbari(i,1:6),[current_id;gs_state],constants,station_ids);
         Ki = Pbari*Htilde'/(Htilde*Pbari*Htilde' + R);
     
         % Measurement correction
-        y(:,i) = yi - Htilde*xbari;
-        dxhat(:,i) = xbari + Ki*y(:,i);
+        dxhat(:,i) = xbari + Ki*(y(:,i)- Htilde*xbari);
         P(:,:,i) = (eye(n) - Ki*Htilde)*Pbari*(eye(n) - Ki*Htilde)' + Ki*R*Ki';
-        yhat(:,i) = yi - Htilde*dxhat(:,i);
+        yhat(:,i) = y(:,i) - Htilde*dxhat(:,i);
     
         % Move iteration forward
         xhatim1 = dxhat(:,i);
         Pim1 = P(:,:,i);
-        
     end
+    
+    % Add deviations to nominal trajectory for LKF section and initialize EKF
+    Xhat = Xnom(1:length(tLKF),:)' + dxhat;
+end
 
-% Add deviations to nominal trajectory for LKF section and initialize EKF
-Xhat = Xnom(1:length(tLKF),:)' + dxhat;
-Xhatim1 = Xhat(:,end)'; % different than xhatim1
 
 
 % Iterative algorithm for EKF
-for i = length(tLKF)+1:length(tLKF) + length(tEKF) - 1
+for i = LKFinit+1:length(t)
+
+    if i == 1
+        Xbari(i,:) = X0;
+        Phii  = eye(n);
+    else
+        % Integrate reference trajectory and stm to next time step
+        current_tstep = [t(i-1) t(i)];
+        Xref = [Xhat(:,end);reshape(eye(n),[],1)];
+    
+        [~,Xint] = ode45(@(t,x) odeSTM_J2_Drag(t,x,constants),current_tstep,Xref,options);
+        Xint_end = Xint(end,:);
+        Xbari(i,:) = Xint_end(1:n);
+        Phii = reshape(Xint_end(n+1:end),n,n);
+    end
 
     % Read next observation and expected observation
-    M = Y{i};
-
-    % Integrate reference trajectory and stm to next time step
-    current_tstep = [t(i-1) t(i)];
-    state_stm = [Xhatim1(:);reshape(eye(n),[],1)];
-    options = odeset('RelTol',1e-11,'AbsTol',1e-11);
-    [~,sstm] = ode45(@(t,x) odeSTM_J2_rv(t,x,mu,Rp,J2),current_tstep,state_stm,options);
-    last_sstm = sstm(end,:);
-    Xbari = last_sstm(1:n);
-    Phii = reshape(last_sstm(n+1:end),n,n);
+    M = Y(i,:);
+    current_id = M(2);
+    idx = find(current_id == station_ids);
+    current_station = [current_id, Xbari(i,9+3*(idx-1)+(1:3))];
 
     % Time update
     Pbari = Phii*Pim1*Phii';
 
-    % Computes observation deviation and Kalman Gain
-    if isempty(M)
-        Xhat(:,i) = Xbari;
-        P(:,:,i) = Pbari;
-        y(:,i) = NaN;
-        yhat(:,i) = NaN;
-
-        % Move iteration forward
-        Xhatim1 = Xbari;
-        Pim1 = Pbari;
-        continue % skips measurement update if no measurement available
-    end
-    [G,~] = genMeasurements(t(i),stations_lla,theta0,wE,[],Xbari);
-    Mn = G{1};
-    % Select correct station measurement
-    for k = 1:size(Mn,1)
-        if Mn(k,1) ~= M(1)
-            continue
-        else
-            Mnj = Mn(k,:);
-            break
-        end
-    end
-    y(:,i) = M(:,2:3)' - Mnj(:,2:3)';
-    Htilde = sc_range_ranger_Htilde(Xbari,gs_state(i,:));
+    % Computes prefit and Kalman Gain
+    [G,gs_state] = genSingleMeasurement(t(i),stations,current_station,constants,Xbari(i,1:6));
+    y(:,i) = M(:,3:4)' - G(:,2:3)';
+    Htilde = linearizedH(t(i),Xbari(i,1:6),[current_id;gs_state],constants,station_ids);
     Ki = Pbari*Htilde'/(Htilde*Pbari*Htilde' + R);
 
     % Measurement correction
     dXhat = Ki*y(:,i);
-    Xhat(:,i) = Xbari(:) + dXhat;
+    Xhat(:,i) = Xbari(i,:)' + dXhat;
     yhat(:,i) = y(:,i) - Htilde*dXhat;
-    P(:,:,i) = (eye(n) - Ki*Htilde)*Pbari;
+    P(:,:,i) = (eye(n) - Ki*Htilde)*Pbari*(eye(n) - Ki*Htilde)' + Ki*R*Ki';
 
     % Move iteration forward
     Xhatim1 = Xhat(:,i)';

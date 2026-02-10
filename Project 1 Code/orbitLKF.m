@@ -8,9 +8,14 @@ Inputs:
     >R: measurement noise covariance matrix
     >Xnom: nominal trajectory state vector
     >constants: struct that contains:
-        -mu: gravitational parameter for central body
-        -Rp: radius of central body
-        -J2: J2 coefficient of central body
+        -mu: Earth's gravitational parameter mu
+        -J2: Earth's J2 coefficient
+        -RE: Earth's radius
+        -wE: Earth's rotation rate
+        -CD: S/C drag coefficient
+        -A: S/C cross sectional area (assuming spherical)
+        -m: S/C mass
+        -H, r0, rho0: atmospheric drag model constants
     >stations: struct containing information on stations:
         -Rs: positions of each station in the ecef frame
         -station_ids: stations ids correspoding to stations in Rs
@@ -48,16 +53,15 @@ for j = 1:num_iterations
     xhatim1 = xbar0;
 
     % Integrate current initial condition
-    state_stm = [X0';reshape(eye(n),[],1)];
-    [~,sstm] = ode45(@(t,x) odeSTM_J2_Drag(t,x,constants),t,state_stm,options);
-    Xbar = sstm(:,1:n);
+    [~,Xint] = ode45(@(t,x) odeSTM_J2_Drag(t,x,constants),t,[X0';reshape(eye(n),[],1)],options);
+    Xbar = Xint(:,1:n);
 
     % Iterative algorithm
     for i = 1:length(t)
 
         % Get this time step's state info
         Xbari(i,:) = Xbar(i,:);
-        Phi(:,:,i) = reshape(sstm(i,n+1:end),n,n);
+        Phi(:,:,i) = reshape(Xint(i,n+1:end),n,n);
     
         % Read next observation and determine station to pass to measurements
         M = Y(i,:);
@@ -75,10 +79,10 @@ for j = 1:num_iterations
         Pbari = Phii*Pim1*Phii';
 
         % Extract station id and generate measurement
-        [G,gs_state(:,i)] = genSingleMeasurement(t(i),stations,current_station,constants,Xbari(i,1:6));
+        [G,gs_state] = genSingleMeasurement(t(i),stations,current_station,constants,Xbari(i,1:6));
 
         y(:,i,j) = M(:,3:4)' - G(:,2:3)';
-        Htilde = linearizedH(t(i),Xbari(i,1:6),[current_id;gs_state(:,i)],constants,station_ids);
+        Htilde = linearizedH(t(i),Xbari(i,1:6),[current_id;gs_state],constants,station_ids);
         Ki = Pbari*Htilde'/(Htilde*Pbari*Htilde' + R);
     
         % Measurement correction
