@@ -1,9 +1,12 @@
-function [Xhat,P,y,yhat] = orbitEKF(t,xbar0,Pbar0,Y,R,Xnom,constants,stations,LKFinit)
+function [Xhat,P,y,yhat] = orbitEKF(t,xbar0,Pbar0,Q,Qframe,Y,R,Xnom,constants,stations,LKFinit)
 %{
 Inputs:
     >t: time vector
     >xbar0: initailized state deviation
     >Pbar0: initialized state covariance matrix
+    >Q: process noise covariance matrix
+    >Q: process noise covariance matrix
+    >Qframe: frame that Q was defined in (ECI or RIC)
     >Y: simulated actual measurement data for true trajectory
     >R: measurement noise covariance matrix
     >constants: struct that contains:
@@ -35,9 +38,10 @@ options = odeset('RelTol',1e-11,'AbsTol',1e-11);
 station_ids = stations.station_ids;
 
 % Initialize
+n = length(xbar0);
+Phi = zeros(n,n,length(t));
 Pim1 = Pbar0;
 xhatim1 = xbar0;
-n = length(xbar0);
 X0 = Xnom(1,:);
 
 if LKFinit > 0
@@ -46,36 +50,52 @@ if LKFinit > 0
     
     % Integrate current initial condition
     Xref = [X0';reshape(eye(n),[],1)];
-    [~,Xint] = ode45(@(t,x) odeSTM_J2_Drag(t,x,constants),tLKF,Xref,options);
+    [~,Xint] = ode45(@(t,x) odeSTM_J2(t,x,constants),tLKF,Xref,options);
     Xbar = Xint(:,1:n);
     
     % Iterative algorithm
     for i = 1:length(tLKF)
     
         % Get this time step's state info
-        Xbari(i,:) = Xbar(i,:);
+        Xbari = Xbar(i,:);
         Phi(:,:,i) = reshape(Xint(i,n+1:end),n,n);
     
         % Read next observation and determine station to pass to measurements
         M = Y(i,:);
         current_id = M(2);
         idx = find(current_id == station_ids);
-        current_station = [current_id, Xbari(i,9+3*(idx-1)+(1:3))];
+        current_station = [current_id, stations.Rs(idx,:)];
     
         % Time update
         if i > 1
             Phii = Phi(:,:,i)/Phi(:,:,i-1);
+            deltat = t(i) - t(i-1);
         else
             Phii = Phi(:,:,i);
+            deltat = 0;
         end
+        
+        % Rotate from RIC to ECI
+        if Qframe == "RIC"
+            Rbar = Xbari(1:3)./norm(Xbari);
+            Cbar = cross(Xbari(1:3),Xbari(4:6))./norm(cross(Xbari(1:3),Xbari(4:6)));
+            Ibar = cross(Cbar,Rbar);
+            R_ECI2RIC = [Rbar; Ibar; Cbar];
+            Q = R_ECI2RIC'*Q*R_ECI2RIC;
+        end
+
+        % SNC implementation
+        Gamma = deltat .* [deltat/2.*eye(3);
+                            eye(3)];
+
         xbari = Phii*xhatim1;
-        Pbari = Phii*Pim1*Phii';
-    
+        Pbari = Phii*Pim1*Phii' + Gamma*Q*Gamma';
+
         % Extract station id and generate measurement
-        [G,gs_state] = genSingleMeasurement(t(i),stations,current_station,constants,Xbari(i,1:6));
-    
+        [G,gs_state] = genSingleMeasurement(t(i),current_station,constants,Xbari(1:6));
+
         y(:,i) = M(:,3:4)' - G(:,2:3)';
-        Htilde = linearizedH(t(i),Xbari(i,1:6),[current_id;gs_state],constants,station_ids);
+        Htilde = linearizedH(Xbari(1:6),gs_state);
         Ki = Pbari*Htilde'/(Htilde*Pbari*Htilde' + R);
     
         % Measurement correction
@@ -98,37 +118,52 @@ end
 for i = LKFinit+1:length(t)
 
     if i == 1
-        Xbari(i,:) = X0;
+        Xbar(i,:) = X0;
         Phii  = eye(n);
+        deltat = 0;
     else
         % Integrate reference trajectory and stm to next time step
         current_tstep = [t(i-1) t(i)];
         Xref = [Xhat(:,end);reshape(eye(n),[],1)];
     
-        [~,Xint] = ode45(@(t,x) odeSTM_J2_Drag(t,x,constants),current_tstep,Xref,options);
+        [~,Xint] = ode45(@(t,x) odeSTM_J2(t,x,constants),current_tstep,Xref,options);
         Xint_end = Xint(end,:);
-        Xbari(i,:) = Xint_end(1:n);
+        Xbar(i,:) = Xint_end(1:n);
         Phii = reshape(Xint_end(n+1:end),n,n);
+        deltat = t(i-1) - t(i);
     end
 
-    % Read next observation and expected observation
+    % Read next observation and determine station to pass to measurements
     M = Y(i,:);
     current_id = M(2);
     idx = find(current_id == station_ids);
-    current_station = [current_id, Xbari(i,9+3*(idx-1)+(1:3))];
+    current_station = [current_id, stations.Rs(idx,:)];
 
-    % Time update
-    Pbari = Phii*Pim1*Phii';
+    % Rotate from RIC to ECI
+    if Qframe == "RIC"
+        Rbar = Xbari(1:3)./norm(Xbari);
+        Cbar = cross(Xbari(1:3),Xbari(4:6))./norm(cross(Xbari(1:3),Xbari(4:6)));
+        Ibar = cross(Cbar,Rbar);
+        R_ECI2RIC = [Rbar; Ibar; Cbar];
+        Q = R_ECI2RIC'*Q*R_ECI2RIC;
+    end
 
-    % Computes prefit and Kalman Gain
-    [G,gs_state] = genSingleMeasurement(t(i),stations,current_station,constants,Xbari(i,1:6));
+    % SNC implementation
+    Gamma = deltat .* [deltat/2.*eye(3);
+                        eye(3)];
+
+    Pbari = Phii*Pim1*Phii' + Gamma*Q*Gamma';
+
+    % Extract station id and generate measurement
+    [G,gs_state] = genSingleMeasurement(t(i),current_station,constants,Xbar(i,1:6));
+
     y(:,i) = M(:,3:4)' - G(:,2:3)';
-    Htilde = linearizedH(t(i),Xbari(i,1:6),[current_id;gs_state],constants,station_ids);
+    Htilde = linearizedH(Xbar(i,1:6),gs_state);
     Ki = Pbari*Htilde'/(Htilde*Pbari*Htilde' + R);
 
     % Measurement correction
     dXhat = Ki*y(:,i);
-    Xhat(:,i) = Xbari(i,:)' + dXhat;
+    Xhat(:,i) = Xbar(i,:)' + dXhat;
     yhat(:,i) = y(:,i) - Htilde*dXhat;
     P(:,:,i) = (eye(n) - Ki*Htilde)*Pbari*(eye(n) - Ki*Htilde)' + Ki*R*Ki';
 

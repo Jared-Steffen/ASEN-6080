@@ -3,7 +3,7 @@ clc; clear; close all
 %% Problem 1
 
 % Read in data
-file_p1 = fileread('HW1 Data\prob1c_solution.json');
+file_p1 = fileread('prob1c_solution.json');
 data_p1 = jsondecode(file_p1);
 % disp(data_p1)
 
@@ -23,10 +23,10 @@ stm_p1 = STM_J2_J3(mu,J2,J3,Re,r_vec);
 %% Problem 2
 
 % Read in data
-file_p2 = fileread('HW1 Data\prob2b_solution.json');
+file_p2 = fileread('prob2b_solution.json');
 data_p2 = jsondecode(file_p2);
 % disp(data_p2)
-truth_2a = load("HW1 Data\HW1_truth.txt");
+truth_2a = load("HW1_truth.txt");
 
 test_X0 = data_p2.inputs.X0.values;
 test_Phi0 = data_p2.inputs.Phi0.values;
@@ -129,7 +129,7 @@ v_labels = {'\deltav_x Velocity Difference [km/s]','\deltav_y Velocity Differenc
 %% Problem 3
 
 % Read in data
-file_p3b = fileread('HW1 Data\\prob3b_solution.json');
+file_p3b = fileread('prob3b_solution.json');
 data_p3b = jsondecode(file_p3b);
 disp(data_p3b)
 
@@ -140,7 +140,7 @@ test_gs_state = [data_p3b.inputs.station_state.Rs;data_p3b.inputs.station_state.
 test_sc_Htilde = sc_range_ranger_Htilde(test_sc_state,test_gs_state);
 
 % Read in data
-file_p3d = fileread('HW1 Data\prob3d_solution.json');
+file_p3d = fileread('prob3d_solution.json');
 data_p3d = jsondecode(file_p3d);
 disp(data_p3d)
 
