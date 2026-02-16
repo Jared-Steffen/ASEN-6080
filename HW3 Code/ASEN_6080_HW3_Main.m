@@ -212,7 +212,7 @@ end
 XnomDMC = [Xnom, aJ3];
 
 % DMC Tuning
-constants.tau = T;
+constants.tau = T/30;
 
 % sigma_xyz_DMC = 10.^(-15:-5);
 % for i = 1:length(sigma_xyz_DMC)
