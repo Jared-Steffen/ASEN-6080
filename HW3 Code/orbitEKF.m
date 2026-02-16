@@ -130,7 +130,7 @@ for i = LKFinit+1:length(t)
         Xint_end = Xint(end,:);
         Xbar(i,:) = Xint_end(1:n);
         Phii = reshape(Xint_end(n+1:end),n,n);
-        deltat = t(i-1) - t(i);
+        deltat = t(i) - t(i-1);
     end
 
     % Read next observation and determine station to pass to measurements
