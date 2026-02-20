@@ -43,6 +43,27 @@ w_labels = {'w_x Error [km/s^2]', ...
             'w_y Error [km/s^2]', ...
             'w_z Error [km/s^2]'};
 
+w2_labels = {'x acceleration [km/s^2]', ...
+            'y acceleration [km/s^2]', ...
+            'z acceleration [km/s^2]'};
+
+figure();
+for k = 1:3
+    subplot(3,1,k); hold on
+    plot(t/3600, what(:,k), markerStyles{1}, 'MarkerSize', 8)
+    plot(t/3600, wtrue(:,k), markerStyles{1}, 'MarkerSize', 8)
+    xlabel('Time [hr]')
+    ylabel(w2_labels{k})
+end
+
+sgtitle(filter_type + " J3/DMC Acceleration")
+
+subplot(3,1,1)
+lgd = legend({'Estimated','Truth'});
+lgd.Units = 'normalized';
+lgd.Position = [0.75 0.935 0.25 0.05];
+
+
 figure();
 for k = 1:3
     subplot(3,1,k); hold on
