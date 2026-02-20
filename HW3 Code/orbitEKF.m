@@ -38,6 +38,7 @@ options = odeset('RelTol',1e-11,'AbsTol',1e-11);
 station_ids = stations.station_ids;
 
 % Initialize
+Q0 = Q;
 n = length(xbar0);
 Phi = zeros(n,n,length(t));
 Pim1 = Pbar0;
@@ -76,6 +77,7 @@ if LKFinit > 0
         end
         
         % Rotate from RIC to ECI
+        Q = Q0;
         if Qframe == "RIC"
             Rbar = Xbari(1:3)./norm(Xbari);
             Cbar = cross(Xbari(1:3),Xbari(4:6))./norm(cross(Xbari(1:3),Xbari(4:6)));
@@ -140,6 +142,7 @@ for i = LKFinit+1:length(t)
     current_station = [current_id, stations.Rs(idx,:)];
 
     % Rotate from RIC to ECI
+    Q = Q0;
     if Qframe == "RIC"
         Rbar = Xbari(1:3)./norm(Xbari);
         Cbar = cross(Xbari(1:3),Xbari(4:6))./norm(cross(Xbari(1:3),Xbari(4:6)));

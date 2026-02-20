@@ -34,8 +34,8 @@ options = odeset('RelTol',1e-11,'AbsTol',1e-11);
 station_ids = stations.station_ids;
 
 % Initialize
+Q0 = Q;
 n = length(xbar0);
-
 Phi = zeros(n,n,length(t));
 P = zeros(n,n,length(t),num_iterations);
 y = NaN(2, length(t),num_iterations);
@@ -76,6 +76,7 @@ for j = 1:num_iterations
         end
         
         % Rotate from RIC to ECI
+        Q = Q0;
         if Qframe == "RIC"
             Rbar = Xbari(1:3)./norm(Xbari);
             Cbar = cross(Xbari(1:3),Xbari(4:6))./norm(cross(Xbari(1:3),Xbari(4:6)));
