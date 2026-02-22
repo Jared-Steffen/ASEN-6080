@@ -84,6 +84,9 @@ end
 Pbar0 = diag([1,1,1,1e-3,1e-3,1e-3].^2);
 xbar0 = [1 1 1 1e-3 1e-3 1e-3]';
 
+% Save data
+save('simulation_dataJ2J3_test.mat','t','Xnom',"noisy_measurements","R",'Pbar0',"xbar0","constants","stations")
+
 % Iterate for different Q's
 % sigma_xyz = 10.^(-15:-6);
 % for i = 1:length(sigma_xyz)
