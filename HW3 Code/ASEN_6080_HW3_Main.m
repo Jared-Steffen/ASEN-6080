@@ -53,11 +53,14 @@ X0 = [r0;v0] + perturbation;
 
 % ode45 calls for truth data
 options = odeset('RelTol',1e-11,'AbsTol',1e-11);
+[tJ2,XnomJ2] = ode45(@(t,x) orbitEOM_J2(t,x,constants),tspan,X0,options);
 [t,Xnom] = ode45(@(t,x) orbitEOM_J2_J3(t,x,constants),tspan,X0,options);
 
 % Generate measurements
 measurements = genMeasurements(t,stations,constants,Xnom);
+measurementsJ2 = genMeasurements(tJ2,stations,constants,XnomJ2);
 t_meas = measurements(:,1);
+t_measJ2 = measurementsJ2(:,1);
 station_id = measurements(:,2);
 
 % Measurement covariance matrix
@@ -67,15 +70,20 @@ R = diag([sigma_r,sigma_rdot].^2);
 
 % Add noise to measurements
 noisy_measurements = zeros(size(measurements));
+noisy_measurementsJ2 = zeros(size(measurementsJ2));
 for i = 1:length(t_meas)
     M = measurements(i,:);
+    MJ2 = measurementsJ2(i,:);
     n = size(M,1);
     M(3) = M(3) + sigma_r*randn(n,1);
     M(4) = M(4) + sigma_rdot*randn(n,1);
-    noisy_measurements(i,:) = M;
+    MJ2(3) = MJ2(3) + sigma_r*randn(n,1);
+    MJ2(4) = MJ2(4) + sigma_rdot*randn(n,1);
+    noisy_measurementsJ2(i,:) = MJ2;
 end
 
 % Redo ode with only measurement time steps
+[tJ2,XnomJ2] = ode45(@(t,x) orbitEOM_J2(t,x,constants),t_measJ2,X0,options);
 [t,Xnom] = ode45(@(t,x) orbitEOM_J2_J3(t,x,constants),t_meas,X0,options);
 
 %% SNC Implementation
@@ -86,6 +94,7 @@ xbar0 = [1 1 1 1e-3 1e-3 1e-3]';
 
 % Save data
 save('simulation_dataJ2J3_test.mat','t','Xnom',"noisy_measurements","R",'Pbar0',"xbar0","constants","stations")
+save('simulation_dataJ2_test.mat','tJ2','XnomJ2',"noisy_measurementsJ2","R",'Pbar0',"xbar0","constants","stations")
 
 % Iterate for different Q's
 % sigma_xyz = 10.^(-15:-6);

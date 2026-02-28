@@ -78,27 +78,33 @@ for j = 1:num_iterations
             deltat = 0;
         end
         
-        % Rotate from RIC to ECI
-        Q = Q0;
-        if Qframe == "RIC"
-            Rbar = Xbari(1:3)./norm(Xbari);
-            Cbar = cross(Xbari(1:3),Xbari(4:6))./norm(cross(Xbari(1:3),Xbari(4:6)));
-            Ibar = cross(Cbar,Rbar);
-            R_ECI2RIC = [Rbar; Ibar; Cbar];
-            Q = R_ECI2RIC'*Q*R_ECI2RIC;
+        % If adding process noise, then implement SNC
+        if ~isempty(Q)
+            Q = Q0;
+            % Rotate from RIC to ECI
+            if Qframe == "RIC"
+                Rbar = Xbari(1:3)./norm(Xbari);
+                Cbar = cross(Xbari(1:3),Xbari(4:6))./norm(cross(Xbari(1:3),Xbari(4:6)));
+                Ibar = cross(Cbar,Rbar);
+                R_ECI2RIC = [Rbar; Ibar; Cbar];
+                Q = R_ECI2RIC'*Q*R_ECI2RIC;
+            end
+    
+            % SNC implementation
+            Gamma = deltat .* [deltat/2.*eye(3);
+                                eye(3)];
+    
+            % Skip SNC if measurement gap is big enough
+            if deltat > 10
+                Pbari(:,:,i,j) = Phii(:,:,i,j)*Pim1*Phii(:,:,i,j)';
+            else
+                Pbari(:,:,i,j) = Phii(:,:,i,j)*Pim1*Phii(:,:,i,j)' + Gamma*Q*Gamma';
+            end
+        else
+            Pbari(:,:,i,j) = Phii(:,:,i,j)*Pim1*Phii(:,:,i,j)';
         end
-
-        % SNC implementation
-        Gamma = deltat .* [deltat/2.*eye(3);
-                            eye(3)];
 
         xbari = Phii(:,:,i,j)*xhatim1;
-        
-        if deltat/3600 > 1
-            Pbari(:,:,i,j) = Phii(:,:,i,j)*Pim1*Phii(:,:,i,j)';
-        else
-            Pbari(:,:,i,j) = Phii(:,:,i,j)*Pim1*Phii(:,:,i,j)' + Gamma*Q*Gamma';
-        end
 
         % Extract station id and generate measurement
         [G,gs_state] = genSingleMeasurement(t(i),current_station,constants,Xbari(1:6));

@@ -18,22 +18,22 @@ stations = data.stations;
 %% Without Process Noise
 
 % Batch
-% tol = 0.2;
+tol = 0.2;
 num_iterations = 1;
-% [XhatBLLS,PBLLS,yBLLS,yhatBLLS,batch_cnt] = orbitBatch(t,xbar0,Pbar0,noisy_measurements,R,Xnom,constants,stations,tol,num_iterations,"");
-% % plot_filter_diagnostics(t,Xnom,XhatBLLS(:,:,end),PBLLS(:,:,:,end),yBLLS(:,:,end),yhatBLLS(:,:,end),R,station_id,'Batch',"")
-% 
-% % LKF
-% Q = zeros(3);
-% [XhatLKF1,xhatLKF1,PLKF1,PbarLKF1,yLKF1,yhatLKF1,PhiLKF1] = orbitLKF(t,xbar0,Pbar0,Q,"ECI",noisy_measurements,R,Xnom,constants,stations,num_iterations);
-% % plot_filter_diagnostics(t,Xnom,XhatLKF1(:,:,end),PLKF1(:,:,:,end),yLKF1(:,:,end),yhatLKF1(:,:,end),R,station_id,"LKF","")
-% [Xhatl,Pl] = orbitLKFSmoother(t,xhatLKF1,Xnom,PLKF1,PbarLKF1,PhiLKF1);
-% % plot_smoother_diagnostics(t,Xnom,Xhatl,Pl)
-% 
-% % Compare
-% Xhat_list{1} = XhatBLLS;
-% Xhat_list{2} = XhatLKF1;
-% plot_compare_RMS(t,Xnom,Xhat_list,{'Batch (1 Iteration)','Smoothed LKF (No Process Noise)'})
+[XhatBLLS,PBLLS,yBLLS,yhatBLLS,batch_cnt] = orbitBatch(t,xbar0,Pbar0,noisy_measurements,R,Xnom,constants,stations,tol,num_iterations,"");
+% plot_filter_diagnostics(t,Xnom,XhatBLLS(:,:,end),PBLLS(:,:,:,end),yBLLS(:,:,end),yhatBLLS(:,:,end),R,station_id,'Batch',"")
+
+% LKF
+Q = zeros(3);
+[XhatLKF1,xhatLKF1,PLKF1,PbarLKF1,yLKF1,yhatLKF1,PhiLKF1] = orbitLKF(t,xbar0,Pbar0,Q,"ECI",noisy_measurements,R,Xnom,constants,stations,num_iterations);
+% plot_filter_diagnostics(t,Xnom,XhatLKF1(:,:,end),PLKF1(:,:,:,end),yLKF1(:,:,end),yhatLKF1(:,:,end),R,station_id,"LKF","")
+[Xhatl,Pl] = orbitLKFSmoother(t,xhatLKF1,Xnom,PLKF1,PbarLKF1,PhiLKF1);
+plot_smoother_diagnostics(t,Xnom,Xhatl,Pl)
+
+% Compare
+Xhat_list{1} = XhatBLLS;
+Xhat_list{2} = XhatLKF1;
+plot_compare_RMS(t,Xnom,Xhat_list,{'Batch (1 Iteration)','Smoothed LKF (No Process Noise)'})
 
 %% With Process Noise
 
