@@ -186,8 +186,8 @@ save('simulation_dataJ2_test.mat','tJ2','XnomJ2',"noisy_measurementsJ2","R",'Pba
 % sgtitle('Post-fit Residual Error RMS Values vs \sigma{x,y,z} for an EKF')
 
 % Best Q
-% sigma_xyz = 1e-7;
-% Q = diag([sigma_xyz, sigma_xyz, sigma_xyz].^2);
+sigma_xyz = 1e-7;
+Q = diag([sigma_xyz, sigma_xyz, sigma_xyz].^2);
 
 % LKF
 num_iterations = 1;
@@ -196,8 +196,8 @@ num_iterations = 1;
 
 % EKF
 LKFinit = 100;
-% [XhatEKF,PEKF,yEKF,yhatEKF] = orbitEKF(t,xbar0,Pbar0,Q,"ECI",noisy_measurements,R,Xnom,constants,stations,LKFinit);
-% plot_filter_diagnostics(t,Xnom,XhatEKF,PEKF,yEKF,yhatEKF,R,station_id,"EKF","")
+[XhatEKF,PEKF,yEKF,yhatEKF] = orbitEKF(t,xbar0,Pbar0,Q,"ECI",noisy_measurements,R,Xnom,constants,stations,LKFinit);
+plot_filter_diagnostics(t,Xnom,XhatEKF,PEKF,yEKF,yhatEKF,R,station_id,"EKF","")
 
 % Define in RIC frame
 % Q = diag([1e-10 1e-9 1e-7].^2);
