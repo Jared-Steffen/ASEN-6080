@@ -99,7 +99,7 @@ for i = 1:length(t)
     % Get new covariance
     sum_c = zeros(size(P0));
     for j = 1:size(Chi,2)
-        sum_c = sum_c + Wc(j).*(Chi(:,j)-X0)*(Chi(:,j)-X0)';
+        sum_c = sum_c + Wc(j).*(Chi(:,j)-sum_m)*(Chi(:,j)-sum_m)';
     end
     Pk_UKF(:,:,i) = sum_c;
 end
