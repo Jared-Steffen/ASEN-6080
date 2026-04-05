@@ -46,7 +46,7 @@ Wmc = 1/(2*(n+lambda));
 Wm = [Wm0;Wmc*ones(2*n,1)];
 Wc = [Wc0;Wmc*ones(2*n,1)];
 
-% Iterative algorithm for EKF
+% Iterative algorithm for UKF
 for i = 1:length(t)
 
     if i == 1
