@@ -11,6 +11,7 @@ constants.mu = 3.986004415e5; % km^3/s^2
 constants.J2 = 1.0826269e-3;
 constants.RE = 6378.1363; % km
 constants.wE = 7.2921158553e-5; % rad/s
+constants.theta0 = 0; % rad
 
 % Define Atmospheric Drag Model
 constants.rho0 = 3.614e-4; % kg/km^3
