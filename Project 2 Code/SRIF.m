@@ -1,4 +1,4 @@
-function [Xhat,Xhatm,dxhat,dxhatm,P,Pm,y,yhat,yhatl] = SRIF(t,xbar0,Pbar0,Q,Y,V,Xnom,constants,stations,num_iterations)
+function [Xhat,Xhatm,dxhat,dxhatm,P,Pm,y,yhat,yhatl] = SRIF(t,xbar0,Pbar0,Q,Y,V,X0,constants,stations,num_iterations)
 %{
 Inputs:
     >t: time vector
@@ -46,7 +46,7 @@ dxhatm = zeros(n,nt,num_iterations);
 Xhat = zeros(nt,n,num_iterations);
 Xhatm = zeros(nt,n,num_iterations);
 
-X0 = Xnom(1,1:n);
+X0 = X0(1,1:n);
 
 for j = 1:num_iterations
 

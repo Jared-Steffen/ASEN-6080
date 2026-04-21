@@ -18,13 +18,6 @@ Outputs:
 %}
 
 %% Plot formatting
-set(groot,'defaultFigureColor','w')
-set(groot,'defaultAxesFontSize',14)
-set(groot,'defaultAxesLineWidth',1.2)
-set(groot,'defaultLineLineWidth',2)
-set(groot,'defaultAxesGridAlpha',0.3)
-set(groot,'defaultAxesXGrid','on')
-set(groot,'defaultAxesYGrid','on')
 lineStyles   = {'--','-',':','-.'};
 markerStyles = {'.','o','x'};
 
@@ -57,13 +50,16 @@ parameter_labels = {'C_R'};
 figure();
 for k = 1:3
     subplot(3,1,k); hold on
+    if k == 1
+        title(filter_type + " Position Error with \pm3\sigma Bounds")
+    end
     plot(t/3600, er(:,k), markerStyles{1},'MarkerSize',8)
     line = plot(t/3600, +sig3(:,k), lineStyles{1});
     plot(t/3600, -sig3(:,k), lineStyles{1},'Color',line.Color)
     xlabel('Time [hr]')
     ylabel(r_labels{k})
 end
-sgtitle(filter_type + " Position Error with \pm3\sigma Bounds")
+
 subplot(3,1,1)
 lgd = legend({'Error','\pm3\sigma'});
 lgd.Units = 'normalized';
@@ -72,13 +68,15 @@ lgd.Position = [0.75 0.935 0.25 0.05];
 figure();
 for k = 1:3
     subplot(3,1,k); hold on
+    if k == 1
+        title(filter_type + " Velocity Error with \pm3\sigma Bounds")
+    end
     plot(t/3600, ev(:,k), markerStyles{1},'MarkerSize',8);
     line = plot(t/3600, +sig3(:,k+3), lineStyles{1});
     plot(t/3600, -sig3(:,k+3), lineStyles{1},'Color',line.Color)
     xlabel('Time [hr]')
     ylabel(v_labels{k})
 end
-sgtitle(filter_type + " Velocity Error with \pm3\sigma Bounds")
 subplot(3,1,1)
 lgd = legend({'Error','\pm3\sigma'});
 lgd.Units = 'normalized';
@@ -86,14 +84,17 @@ lgd.Position = [0.75 0.935 0.25 0.05];
 
 figure();
 for k = 1:length(parameter_labels)
-    plot(t/3600, ep(:,k), markerStyles{1},'MarkerSize',8);
     subplot(length(parameter_labels),1,k); hold on
+    if k == 1
+        title(filter_type + " Parameter \pm3\sigma Bounds")
+    end
+    plot(t/3600, ep(:,k), markerStyles{1},'MarkerSize',8);
     line = plot(t/3600, +sig3(:,k+6), lineStyles{1});
     plot(t/3600, -sig3(:,k+6), lineStyles{1},'Color',line.Color)
     xlabel('Time [hr]')
     ylabel(parameter_labels{k})
 end
-sgtitle(filter_type + " Parameter \pm3\sigma Bounds")
+
 subplot(length(parameter_labels),1,1)
 lgd = legend({'\pm3\sigma'});
 lgd.Units = 'normalized';
